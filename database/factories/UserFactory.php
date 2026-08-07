@@ -22,24 +22,25 @@ class UserFactory extends Factory
      *
      * @return array<string, mixed>
      */
-    public function definition(): array
+   public function definition(): array
+{
+    return [
+        'username' => fake()->unique()->userName(),
+        'password' => bcrypt('password'),
+        'nama_lengkap' => fake()->name(),
+        'role_id' => 1,
+        'is_active' => true,
+        'must_change_pwd' => false,
+    ];
+}
+
+    /**
+     * Indicate that the model's email address should be unverified.
+     */
+    public function unverified(): static
     {
-        return [
-            'username' => fake()->unique()->userName(),
-            'password' => static::$password ??= Hash::make('password'),
-            'nama_lengkap' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'jabatan' => fake()->jobTitle(),
-            'bagian' => fake()->randomElement([
-                'Umum & Rumah Tangga',
-                'Aset & Logistik',
-                'Pengadaan',
-            ]),
-            'role_id' => 1,
-            'is_active' => true,
-            'must_change_pwd' => false,
-            'last_login' => null,
-            'remember_token' => Str::random(10),
-        ];
+        return $this->state(fn (array $attributes) => [
+            'email_verified_at' => null,
+        ]);
     }
 }
