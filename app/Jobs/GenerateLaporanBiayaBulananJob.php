@@ -9,17 +9,14 @@ class GenerateLaporanBiayaBulananJob implements ShouldQueue
 {
     use Queueable;
 
-    /**
-     * Create a new job instance.
-     */
-    public function __construct()
-    {
+    public function __construct(
+        public string $periodeAwal,
+        public string $periodeAkhir,
+        public string $dibuatOleh
+    ) {
         //
     }
 
-    /**
-     * Execute the job.
-     */
     public function handle(): void
     {
         //
