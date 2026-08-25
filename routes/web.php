@@ -57,4 +57,6 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
     });
+    Route::post('/admin/audit-log/rehash', [App\Http\Controllers\Admin\AuditLogController::class, 'rehash'])
+    ->name('admin.audit-log.rehash');
 });
