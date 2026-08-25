@@ -59,6 +59,21 @@
             <div class="mb-4">
                 <h2 class="font-bold text-ink text-[15px]">Biaya Bulanan per Kategori</h2>
                 <p class="text-[12px] text-slate-400">Total pengeluaran dikelompokkan per kategori biaya harian</p>
+                <div class="flex items-center gap-1.5 mt-3">
+                    <a href="{{ route('analitik', ['periode' => 'bulanan']) }}"
+                       class="text-xs px-2.5 py-1 rounded-lg {{ $periode === 'bulanan' ? 'bg-gold text-white' : 'bg-slate-100 text-slate-600' }}">Bulanan</a>
+                    <a href="{{ route('analitik', ['periode' => 'kuartalan']) }}"
+                       class="text-xs px-2.5 py-1 rounded-lg {{ $periode === 'kuartalan' ? 'bg-gold text-white' : 'bg-slate-100 text-slate-600' }}">Kuartalan</a>
+                    <a href="{{ route('analitik', ['periode' => 'tahunan']) }}"
+                       class="text-xs px-2.5 py-1 rounded-lg {{ $periode === 'tahunan' ? 'bg-gold text-white' : 'bg-slate-100 text-slate-600' }}">Tahunan</a>
+                    <a href="{{ route('analitik.export-csv') }}"
+                       class="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-white hover:bg-slate-700">Export CSV</a>
+                </div>
+                <div class="flex flex-wrap gap-1.5 mt-2">
+                    @foreach ($kategoriList ?? [] as $kat)
+                        <a href="{{ route('analitik.detail-kategori', $kat) }}" class="text-xs px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">Detail {{ $kat }}</a>
+                    @endforeach
+                </div>
             </div>
             <div class="relative min-h-[300px] flex items-center justify-center">
                 @if (empty($biayaLabels))
