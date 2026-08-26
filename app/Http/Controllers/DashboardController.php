@@ -27,16 +27,47 @@ class DashboardController extends Controller
         $activities = AuditLog::latest('id')->take(5)->get();
         $lastLog = $activities->first();
 
-        // Data chart 6 bulan terakhir. Jika belum ada data, tetap kirim 0 agar view tidak error.
+        // Data chart 6 bulan terakhir per kategori
         $chartLabels = [];
-        $chartValues = [];
+        $chartBbm = [];
+        $chartPerawatan = [];
+        $chartRt = [];
+        $totalBiaya6Bln = 0;
+
         for ($i = 5; $i >= 0; $i--) {
             $month = now()->copy()->subMonths($i);
             $chartLabels[] = $month->translatedFormat('M');
-            $chartValues[] = (float) UmBiayaHarian::whereYear('tanggal', $month->year)
+
+            $bbm = (float) UmBiayaHarian::whereYear('tanggal', $month->year)
+                ->whereMonth('tanggal', $month->month)
+                ->where('kategori', 'BBM')
+                ->sum('jumlah');
+
+            $rawat = (float) UmBiayaHarian::whereYear('tanggal', $month->year)
+                ->whereMonth('tanggal', $month->month)
+                ->where('kategori', 'Perawatan')
+                ->sum('jumlah');
+
+            $rt = (float) UmBiayaHarian::whereYear('tanggal', $month->year)
+                ->whereMonth('tanggal', $month->month)
+                ->where('kategori', 'Rumah Tangga')
+                ->sum('jumlah');
+
+            $totalBulan = (float) UmBiayaHarian::whereYear('tanggal', $month->year)
                 ->whereMonth('tanggal', $month->month)
                 ->sum('jumlah');
+
+            $chartBbm[] = $bbm;
+            $chartPerawatan[] = $rawat;
+            $chartRt[] = $rt;
+            $totalBiaya6Bln += $totalBulan;
         }
+
+        $pksNearDue = AsPks::whereIn('status', ['Aktif', 'Akan Jatuh Tempo'])
+            ->whereDate('jatuh_tempo', '<=', now()->addDays(90))
+            ->orderBy('jatuh_tempo', 'asc')
+            ->take(5)
+            ->get();
 
         return view('dashboard', compact(
             'menunggu',
@@ -47,7 +78,11 @@ class DashboardController extends Controller
             'activities',
             'lastLog',
             'chartLabels',
-            'chartValues'
+            'chartBbm',
+            'chartPerawatan',
+            'chartRt',
+            'totalBiaya6Bln',
+            'pksNearDue'
         ));
     }
 }
