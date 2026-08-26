@@ -23,6 +23,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/analitik', [App\Http\Controllers\AnalyticsController::class, 'index'])->name('analitik');
     Route::get('/analitik/biaya/{kategori}', [App\Http\Controllers\AnalyticsController::class, 'detailKategori'])
     ->name('analitik.detail-kategori');
+    Route::get('/analitik/export-csv', [App\Http\Controllers\AnalyticsController::class, 'exportCsv'])->name('analitik.export-csv');
 
     // Mesin CRUD generik untuk 20 modul (lihat config/modules.php) --
     // setara routing dinamis {resource}?action=... di portum.py.
@@ -56,4 +57,6 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
     });
+    Route::post('/admin/audit-log/rehash', [App\Http\Controllers\Admin\AuditLogController::class, 'rehash'])
+    ->name('admin.audit-log.rehash');
 });
