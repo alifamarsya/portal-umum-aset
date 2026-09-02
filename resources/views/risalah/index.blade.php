@@ -6,11 +6,13 @@
             <p class="text-[12px] font-semibold uppercase tracking-wide text-gold mb-0.5">Rapat &amp; Referensi</p>
             <h1 class="text-xl font-bold text-ink">Risalah Rapat</h1>
         </div>
-        <a href="{{ route('risalah.create') }}"
-           class="inline-flex items-center gap-1.5 bg-brand text-white text-sm font-medium px-4 py-2.5 rounded-lg hover:bg-brand-light transition shadow-card">
-            @include('partials.icon', ['name' => 'plus', 'class' => 'w-4 h-4'])
-            Tambah
-        </a>
+        @if ($canWrite('risalah'))
+            <a href="{{ route('risalah.create') }}"
+               class="inline-flex items-center gap-1.5 bg-brand text-white text-sm font-medium px-4 py-2.5 rounded-lg hover:bg-brand-light transition shadow-card">
+                @include('partials.icon', ['name' => 'plus', 'class' => 'w-4 h-4'])
+                Tambah
+            </a>
+        @endif
     </div>
 
     <div class="bg-white rounded-xl border border-slate-200 shadow-card overflow-hidden">
@@ -34,11 +36,15 @@
                             <td class="px-4 py-3 text-slate-600">{{ $r->tempat }}</td>
                             <td class="px-4 py-3 text-right whitespace-nowrap">
                                 <div class="inline-flex items-center gap-3 text-[13px]">
-                                    <a href="{{ route('risalah.edit', $r) }}" class="text-brand font-medium hover:underline">Ubah</a>
-                                    <form method="POST" action="{{ route('risalah.destroy', $r) }}" class="inline" onsubmit="return confirm('Hapus risalah ini?')">
-                                        @csrf @method('DELETE')
-                                        <button class="text-slate-400 hover:text-red-600 transition">Hapus</button>
-                                    </form>
+                                    @if ($canWrite('risalah'))
+                                        <a href="{{ route('risalah.edit', $r) }}" class="text-brand font-medium hover:underline">Ubah</a>
+                                        <form method="POST" action="{{ route('risalah.destroy', $r) }}" class="inline" onsubmit="return confirm('Hapus risalah ini?')">
+                                            @csrf @method('DELETE')
+                                            <button class="text-slate-400 hover:text-red-600 transition">Hapus</button>
+                                        </form>
+                                    @else
+                                        <span class="text-slate-400 text-xs italic">Lihat Saja</span>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -49,7 +55,9 @@
                                     @include('partials.icon', ['name' => 'book', 'class' => 'w-5 h-5'])
                                 </div>
                                 <p class="text-slate-400 text-sm mb-2">Belum ada risalah rapat.</p>
-                                <a href="{{ route('risalah.create') }}" class="text-brand text-sm font-medium hover:underline">+ Tambah risalah pertama</a>
+                                @if ($canWrite('risalah'))
+                                    <a href="{{ route('risalah.create') }}" class="text-brand text-sm font-medium hover:underline">+ Tambah risalah pertama</a>
+                                @endif
                             </td>
                         </tr>
                     @endforelse

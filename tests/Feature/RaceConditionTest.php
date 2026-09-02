@@ -15,32 +15,37 @@ class RaceConditionTest extends TestCase
 
     public function test_double_approve_should_fail(): void
     {
-        // 1. Buat role dengan permission write ke modul umum_rt (biaya_harian)
-        $role = Role::create([
+        // 1. Buat role maker & checker
+        $roleStaff = Role::create([
+            'nama'  => 'umum_rt',
+            'label' => 'Staf Umum & Rumah Tangga',
+        ]);
+
+        $rolePimpinan = Role::create([
             'nama'  => 'pimpinan',
             'label' => 'Pimpinan Divisi',
         ]);
 
         RolePermission::create([
-            'role_id'   => $role->id,
-            'perm_key'  => 'umum_rt',  // perm_key sesuai config/modules.php biaya_harian
+            'role_id'   => $roleStaff->id,
+            'perm_key'  => 'umum_rt',
             'can_write' => true,
         ]);
 
-        // 2. Buat 3 user: 1 maker + 2 checker
+        // 2. Buat 3 user: 1 maker (staf) + 2 checker (pimpinan)
         $maker = User::factory()->create([
             'username' => 'adol',
-            'role_id'  => $role->id,
+            'role_id'  => $roleStaff->id,
         ]);
 
         $checker1 = User::factory()->create([
             'username' => 'pimpinan',
-            'role_id'  => $role->id,
+            'role_id'  => $rolePimpinan->id,
         ]);
 
         $checker2 = User::factory()->create([
-            'username' => 'checker2',
-            'role_id'  => $role->id,
+            'username' => 'pimpinan2',
+            'role_id'  => $rolePimpinan->id,
         ]);
 
         // 3. Buat transaksi sebagai maker (status: Diajukan)

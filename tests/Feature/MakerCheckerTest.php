@@ -13,35 +13,120 @@ class MakerCheckerTest extends TestCase
 {
     use RefreshDatabase;
 
-    // Helper: setup role + permission + 2 user (maker & checker) sekali pakai
+    // Helper: setup roles & users
     private function setupUsers(): array
     {
-        $role = Role::create([
+        $roleAdmin = Role::create([
+            'nama'  => 'superadmin',
+            'label' => 'Super Administrator',
+        ]);
+
+        $rolePimpinan = Role::create([
             'nama'  => 'pimpinan',
             'label' => 'Pimpinan Divisi',
         ]);
 
-        // Checker PERLU permission can_write agar lolos authorizeModule()
+        $roleStaffUmum = Role::create([
+            'nama'  => 'umum_rt',
+            'label' => 'Staf Umum & Rumah Tangga',
+        ]);
+
+        $roleStaffAset = Role::create([
+            'nama'  => 'aset',
+            'label' => 'Staf Aset & Logistik',
+        ]);
+
+        // Staf Umum punya permission can_write = true ke umum_rt
         RolePermission::create([
-            'role_id'  => $role->id,
-            'perm_key' => 'umum_rt',
+            'role_id'   => $roleStaffUmum->id,
+            'perm_key'  => 'umum_rt',
             'can_write' => true,
         ]);
 
-        $maker = User::factory()->create([
-            'username' => 'adol',
-            'role_id'  => $role->id,
+        // Staf Aset punya permission can_write = true ke aset_logistik
+        RolePermission::create([
+            'role_id'   => $roleStaffAset->id,
+            'perm_key'  => 'aset_logistik',
+            'can_write' => true,
+        ]);
+
+        $admin = User::factory()->create([
+            'username' => 'admin',
+            'role_id'  => $roleAdmin->id,
         ]);
 
         $checker = User::factory()->create([
             'username' => 'pimpinan',
-            'role_id'  => $role->id,
+            'role_id'  => $rolePimpinan->id,
         ]);
 
-        return [$maker, $checker];
+        $maker = User::factory()->create([
+            'username' => 'adol',
+            'role_id'  => $roleStaffUmum->id,
+        ]);
+
+        $otherStaff = User::factory()->create([
+            'username' => 'irma',
+            'role_id'  => $roleStaffAset->id,
+        ]);
+
+        return [$maker, $checker, $admin, $otherStaff];
     }
 
-    /** Test 1: Maker TIDAK BISA self-approve */
+    /** Test 1: Staf Maker bisa membuat transaksi baru (status Diajukan) */
+    public function test_staff_can_create_transaction_as_maker(): void
+    {
+        [$maker] = $this->setupUsers();
+
+        $response = $this->actingAs($maker)->post('/modul/biaya_harian', [
+            'tanggal'    => now()->toDateString(),
+            'kategori'   => 'BBM',
+            'nama_beban' => 'Bensin operasional',
+            'jumlah'     => 150000,
+            'uraian'     => 'Isi bensin dinas',
+        ]);
+
+        $response->assertRedirect('/modul/biaya_harian');
+        $this->assertDatabaseHas('um_biaya_harian', [
+            'jumlah'          => 150000,
+            'maker_id'        => $maker->id,
+            'approval_status' => 'Diajukan',
+        ]);
+    }
+
+    /** Test 2: Admin TIDAK BISA membuat transaksi (hanya read-only) */
+    public function test_admin_cannot_create_transaction(): void
+    {
+        [, , $admin] = $this->setupUsers();
+
+        $response = $this->actingAs($admin)->post('/modul/biaya_harian', [
+            'tanggal'    => now()->toDateString(),
+            'kategori'   => 'BBM',
+            'nama_beban' => 'Bensin operasional',
+            'jumlah'     => 150000,
+            'uraian'     => 'Admin mencoba input',
+        ]);
+
+        $response->assertStatus(403);
+    }
+
+    /** Test 3: Pimpinan TIDAK BISA membuat transaksi (hanya Checker) */
+    public function test_pimpinan_cannot_create_transaction(): void
+    {
+        [, $checker] = $this->setupUsers();
+
+        $response = $this->actingAs($checker)->post('/modul/biaya_harian', [
+            'tanggal'    => now()->toDateString(),
+            'kategori'   => 'BBM',
+            'nama_beban' => 'Bensin operasional',
+            'jumlah'     => 150000,
+            'uraian'     => 'Pimpinan mencoba input',
+        ]);
+
+        $response->assertStatus(403);
+    }
+
+    /** Test 4: Maker TIDAK BISA self-approve transaksinya sendiri */
     public function test_maker_cannot_approve_own_transaction(): void
     {
         [$maker] = $this->setupUsers();
@@ -55,21 +140,58 @@ class MakerCheckerTest extends TestCase
             'approval_status' => 'Diajukan',
         ]);
 
-        // Maker mencoba approve transaksinya sendiri → harus 403
         $response = $this->actingAs($maker)
             ->post("/modul/biaya_harian/{$transaksi->id}/setujui");
 
         $response->assertStatus(403);
-
-        // Status di database harus tetap 'Diajukan'
         $this->assertDatabaseHas('um_biaya_harian', [
             'id'              => $transaksi->id,
             'approval_status' => 'Diajukan',
         ]);
     }
 
-    /** Test 2: Checker YANG BERBEDA bisa approve */
-    public function test_different_checker_can_approve(): void
+    /** Test 5: Staf lain TIDAK BISA approve transaksi (Staf bukan Checker) */
+    public function test_other_staff_cannot_approve_transaction(): void
+    {
+        [$maker, , , $otherStaff] = $this->setupUsers();
+
+        $transaksi = UmBiayaHarian::create([
+            'tanggal'         => now()->toDateString(),
+            'jumlah'          => 60000,
+            'kategori'        => 'BBM',
+            'uraian'          => 'Test approve oleh staf lain',
+            'maker_id'        => $maker->id,
+            'approval_status' => 'Diajukan',
+        ]);
+
+        $response = $this->actingAs($otherStaff)
+            ->post("/modul/biaya_harian/{$transaksi->id}/setujui");
+
+        $response->assertStatus(403);
+    }
+
+    /** Test 6: Admin TIDAK BISA approve transaksi (Admin bukan Checker) */
+    public function test_admin_cannot_approve_transaction(): void
+    {
+        [$maker, , $admin] = $this->setupUsers();
+
+        $transaksi = UmBiayaHarian::create([
+            'tanggal'         => now()->toDateString(),
+            'jumlah'          => 70000,
+            'kategori'        => 'BBM',
+            'uraian'          => 'Test approve oleh admin',
+            'maker_id'        => $maker->id,
+            'approval_status' => 'Diajukan',
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->post("/modul/biaya_harian/{$transaksi->id}/setujui");
+
+        $response->assertStatus(403);
+    }
+
+    /** Test 7: Pimpinan (Checker) BISA approve transaksi yang diajukan staf */
+    public function test_pimpinan_can_approve_transaction(): void
     {
         [$maker, $checker] = $this->setupUsers();
 
@@ -85,10 +207,7 @@ class MakerCheckerTest extends TestCase
         $response = $this->actingAs($checker)
             ->post("/modul/biaya_harian/{$transaksi->id}/setujui");
 
-        // Harus redirect (berhasil)
         $response->assertRedirect();
-
-        // Status di database harus berubah ke Disetujui
         $this->assertDatabaseHas('um_biaya_harian', [
             'id'              => $transaksi->id,
             'approval_status' => 'Disetujui',
@@ -96,12 +215,39 @@ class MakerCheckerTest extends TestCase
         ]);
     }
 
-    /** Test 3: Transaksi yang sudah disetujui tidak bisa disetujui lagi */
+    /** Test 8: Pimpinan (Checker) BISA tolak (reject) transaksi */
+    public function test_pimpinan_can_reject_transaction(): void
+    {
+        [$maker, $checker] = $this->setupUsers();
+
+        $transaksi = UmBiayaHarian::create([
+            'tanggal'         => now()->toDateString(),
+            'jumlah'          => 85000,
+            'kategori'        => 'Perawatan',
+            'uraian'          => 'Test tolak transaksi',
+            'maker_id'        => $maker->id,
+            'approval_status' => 'Diajukan',
+        ]);
+
+        $response = $this->actingAs($checker)
+            ->post("/modul/biaya_harian/{$transaksi->id}/tolak", [
+                'catatan' => 'Harga tidak wajar',
+            ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('um_biaya_harian', [
+            'id'               => $transaksi->id,
+            'approval_status'  => 'Ditolak',
+            'checker_id'       => $checker->id,
+            'catatan_approval' => 'Harga tidak wajar',
+        ]);
+    }
+
+    /** Test 9: Transaksi yang sudah disetujui tidak bisa disetujui lagi */
     public function test_already_approved_cannot_be_approved_again(): void
     {
         [$maker, $checker] = $this->setupUsers();
 
-        // Langsung buat transaksi dengan status sudah 'Disetujui'
         $transaksi = UmBiayaHarian::create([
             'tanggal'         => now()->toDateString(),
             'jumlah'          => 200000,
@@ -112,7 +258,6 @@ class MakerCheckerTest extends TestCase
             'checker_id'      => $checker->id,
         ]);
 
-        // Checker coba approve lagi → harus 403
         $response = $this->actingAs($checker)
             ->post("/modul/biaya_harian/{$transaksi->id}/setujui");
 

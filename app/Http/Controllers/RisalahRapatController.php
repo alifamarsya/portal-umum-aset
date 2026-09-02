@@ -25,19 +25,56 @@ class RisalahRapatController extends Controller
         'lampiran' => 'nullable|string|max:255',
     ];
 
+    private function authorizeRisalah(string $mode = 'read'): void
+    {
+        $user = auth()->user();
+
+        if ($mode === 'read') {
+            if (in_array($user?->role?->nama, ['superadmin', 'pimpinan'])) {
+                return;
+            }
+
+            $perm = \App\Models\RolePermission::where('role_id', $user?->role_id)
+                ->where('perm_key', 'risalah')
+                ->first();
+
+            abort_if(!$perm, 403, "Role Anda tidak memiliki akses ke Risalah Rapat.");
+            return;
+        }
+
+        // Mode write (Maker)
+        if ($user?->role?->nama === 'superadmin') {
+            abort(403, "Administrator hanya memiliki hak akses lihat pada Risalah Rapat.");
+        }
+
+        if ($user?->role?->nama === 'pimpinan') {
+            abort(403, "Pimpinan Divisi hanya memiliki hak akses lihat pada Risalah Rapat.");
+        }
+
+        $perm = \App\Models\RolePermission::where('role_id', $user?->role_id)
+            ->where('perm_key', 'risalah')
+            ->first();
+
+        abort_if(!$perm, 403, "Role Anda tidak memiliki akses ke Risalah Rapat.");
+        abort_if(!$perm->can_write, 403, "Role Anda tidak memiliki izin untuk menambah atau mengubah Risalah Rapat.");
+    }
+
     public function index()
     {
+        $this->authorizeRisalah('read');
         $items = RisalahRapat::orderByDesc('tanggal')->paginate(20);
         return view('risalah.index', compact('items'));
     }
 
     public function create()
     {
+        $this->authorizeRisalah('write');
         return view('risalah.form', ['item' => null]);
     }
 
     public function store(Request $request)
     {
+        $this->authorizeRisalah('write');
         $data = $request->validate($this->rules);
         $data['dibuat_oleh'] = auth()->user()->nama_lengkap;
         $item = RisalahRapat::create($data);
@@ -47,11 +84,13 @@ class RisalahRapatController extends Controller
 
     public function edit(RisalahRapat $risalah)
     {
+        $this->authorizeRisalah('write');
         return view('risalah.form', ['item' => $risalah]);
     }
 
     public function update(Request $request, RisalahRapat $risalah)
     {
+        $this->authorizeRisalah('write');
         $data = $request->validate($this->rules);
         $risalah->update($data);
         $this->audit('UPDATE', 'Risalah Rapat', 'Risalah Rapat', $risalah->id, 'Mengubah risalah rapat');
@@ -60,6 +99,7 @@ class RisalahRapatController extends Controller
 
     public function destroy(RisalahRapat $risalah)
     {
+        $this->authorizeRisalah('write');
         $id = $risalah->id;
         $risalah->delete();
         $this->audit('DELETE', 'Risalah Rapat', 'Risalah Rapat', $id, 'Menghapus risalah rapat');

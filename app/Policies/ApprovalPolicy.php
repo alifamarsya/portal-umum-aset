@@ -12,7 +12,13 @@ class ApprovalPolicy
 {
     public function approve(User $user, object $transaksi): bool
     {
-        if ($transaksi->approval_status !== 'Diajukan') {
+        // Hanya Pimpinan Divisi yang berhak bertindak sebagai Checker
+        if ($user->role?->nama !== 'pimpinan') {
+            return false;
+        }
+
+        $status = $transaksi->approval_status ?? $transaksi->status_persetujuan ?? null;
+        if ($status !== 'Diajukan') {
             return false;
         }
 

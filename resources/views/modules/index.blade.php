@@ -6,11 +6,13 @@
             <p class="text-[12px] font-semibold uppercase tracking-wide text-gold mb-0.5">{{ $cfg['modul'] }}</p>
             <h1 class="text-xl font-bold text-ink">{{ $cfg['judul'] }}</h1>
         </div>
-        <a href="{{ route('modul.create', $key) }}"
-           class="inline-flex items-center gap-1.5 bg-brand text-white text-sm font-medium px-4 py-2.5 rounded-lg hover:bg-brand-light transition shadow-card">
-            @include('partials.icon', ['name' => 'plus', 'class' => 'w-4 h-4'])
-            Tambah Data
-        </a>
+        @if ($canWrite($cfg['perm']))
+            <a href="{{ route('modul.create', $key) }}"
+               class="inline-flex items-center gap-1.5 bg-brand text-white text-sm font-medium px-4 py-2.5 rounded-lg hover:bg-brand-light transition shadow-card">
+                @include('partials.icon', ['name' => 'plus', 'class' => 'w-4 h-4'])
+                Tambah Data
+            </a>
+        @endif
     </div>
 
     <form method="GET" class="mb-4">
@@ -72,7 +74,7 @@
                             @endif
                             <td class="px-4 py-3 text-right whitespace-nowrap">
                                 <div class="inline-flex items-center gap-3 text-[13px]">
-                                    @if ($cfg['maker_checker'] && $item->approval_status === 'Diajukan')
+                                    @if ($cfg['maker_checker'] && $item->approval_status === 'Diajukan' && $isChecker())
                                         <form method="POST" action="{{ route('modul.approve', [$key, $item->id]) }}">
                                             @csrf
                                             <button class="text-emerald-700 font-medium hover:underline">Setujui</button>
@@ -82,12 +84,17 @@
                                             <button class="text-red-600 font-medium hover:underline">Tolak</button>
                                         </form>
                                     @endif
-                                    <a href="{{ route('modul.edit', [$key, $item->id]) }}" class="text-brand font-medium hover:underline">Ubah</a>
-                                    <form method="POST" action="{{ route('modul.destroy', [$key, $item->id]) }}"
-                                          onsubmit="return confirm('Hapus data ini?')">
-                                        @csrf @method('DELETE')
-                                        <button class="text-slate-400 hover:text-red-600 transition">Hapus</button>
-                                    </form>
+                                    @if ($canWrite($cfg['perm']))
+                                        <a href="{{ route('modul.edit', [$key, $item->id]) }}" class="text-brand font-medium hover:underline">Ubah</a>
+                                        <form method="POST" action="{{ route('modul.destroy', [$key, $item->id]) }}"
+                                              onsubmit="return confirm('Hapus data ini?')">
+                                            @csrf @method('DELETE')
+                                            <button class="text-slate-400 hover:text-red-600 transition">Hapus</button>
+                                        </form>
+                                    @endif
+                                    @if (!$canWrite($cfg['perm']) && !($cfg['maker_checker'] && $item->approval_status === 'Diajukan' && $isChecker()))
+                                        <span class="text-slate-400 text-xs italic">Lihat Saja</span>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -98,7 +105,9 @@
                                     @include('partials.icon', ['name' => 'archive', 'class' => 'w-5 h-5'])
                                 </div>
                                 <p class="text-slate-400 text-sm mb-2">Belum ada data {{ strtolower($cfg['judul']) }}.</p>
-                                <a href="{{ route('modul.create', $key) }}" class="text-brand text-sm font-medium hover:underline">+ Tambah data pertama</a>
+                                @if ($canWrite($cfg['perm']))
+                                    <a href="{{ route('modul.create', $key) }}" class="text-brand text-sm font-medium hover:underline">+ Tambah data pertama</a>
+                                @endif
                             </td>
                         </tr>
                     @endforelse

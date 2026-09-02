@@ -41,4 +41,43 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Role::class);
     }
+
+    public function isSuperadmin(): bool
+    {
+        return $this->role?->nama === 'superadmin';
+    }
+
+    public function isPimpinan(): bool
+    {
+        return $this->role?->nama === 'pimpinan';
+    }
+
+    public function isChecker(): bool
+    {
+        return $this->isPimpinan();
+    }
+
+    public function isMaker(): bool
+    {
+        return !in_array($this->role?->nama, ['superadmin', 'pimpinan']);
+    }
+
+    public function canAccessModule(string $permKey): bool
+    {
+        if (in_array($this->role?->nama, ['superadmin', 'pimpinan'])) {
+            return true;
+        }
+
+        return $this->role?->permissions->contains('perm_key', $permKey) ?? false;
+    }
+
+    public function canWriteModule(string $permKey): bool
+    {
+        if (in_array($this->role?->nama, ['superadmin', 'pimpinan'])) {
+            return false;
+        }
+
+        $perm = $this->role?->permissions->firstWhere('perm_key', $permKey);
+        return (bool) ($perm?->can_write ?? false);
+    }
 }

@@ -15,19 +15,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-           $this->call([
+        $this->call([
             RolePermissionSeeder::class,
             UserSeeder::class,
             RefAkunSeeder::class,
-        ]);
-
-        User::factory()->create([
-            'username' => 'admin',
-            'nama_lengkap' => 'Administrator',
-            'email' => 'admin@example.com',
-            'role_id' => 1,
-            'is_active' => true,
-            'must_change_pwd' => false,
         ]);
     }
 }

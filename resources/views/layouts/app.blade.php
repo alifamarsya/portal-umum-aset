@@ -23,8 +23,9 @@
     $user = auth()->user();
     $permissions = $user?->role?->permissions?->keyBy('perm_key') ?? collect();
 
-    $canAccess = fn (string $key) => $user?->role?->nama === 'superadmin' || $permissions->has($key);
-    $canWrite  = fn (string $key) => $user?->role?->nama === 'superadmin' || (bool) optional($permissions->get($key))->can_write;
+    $canAccess = fn (string $key) => in_array($user?->role?->nama, ['superadmin', 'pimpinan']) || $permissions->has($key);
+    $canWrite  = fn (string $key) => !in_array($user?->role?->nama, ['superadmin', 'pimpinan']) && (bool) optional($permissions->get($key))->can_write;
+    $isChecker = fn () => $user?->role?->nama === 'pimpinan';
 
     $operationalGroups = [
         [
@@ -64,7 +65,7 @@
             ],
         ],
         [
-            'perm' => 'arsip_surat_memo',
+            'perm' => 'risalah',
             'label' => 'Arsip Surat & Memo',
             'icon' => 'archive',
             'children' => [
