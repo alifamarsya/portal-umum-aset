@@ -85,13 +85,13 @@ class ModuleController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('modules.index', compact('cfg', 'items', 'key'));
+        return $this->resolveView('index', $key, compact('cfg', 'items', 'key'));
     }
 
-    public function create(string $key)
+ public function create(string $key)
     {
         $cfg = $this->authorizeModule($key, 'write');
-        return view('modules.form', ['cfg' => $cfg, 'key' => $key, 'item' => null]);
+        return $this->resolveView('form', $key, ['cfg' => $cfg, 'key' => $key, 'item' => null]);
     }
 
     public function store(Request $request, string $key)
@@ -118,7 +118,7 @@ class ModuleController extends Controller
     {
         $cfg = $this->authorizeModule($key, 'write');
         $item = $cfg['model']::findOrFail($id);
-        return view('modules.form', ['cfg' => $cfg, 'key' => $key, 'item' => $item]);
+       return $this->resolveView('form', $key, ['cfg' => $cfg, 'key' => $key, 'item' => $item]);
     }
 
     public function update(Request $request, string $key, int $id)
@@ -223,4 +223,30 @@ class ModuleController extends Controller
 
     return $data;
 }
+
+    private function resolveView(string $type, string $key, array $data = []): \Illuminate\Contracts\View\View
+    {
+        $role = auth()->user()?->role?->nama;
+        $folder = match ($role) {
+            'superadmin' => 'admin',
+            'pimpinan'   => 'pimpinan',
+            'umum_rt'    => 'umum',
+            'aset'       => 'aset',
+            'pengadaan'  => 'pengadaan',
+            default      => null,
+        };
+
+        // 1. Cek view spesifik modul di folder role: {folder}.{key}.{index|form}
+        if ($folder && view()->exists("{$folder}.{$key}.{$type}")) {
+            return view("{$folder}.{$key}.{$type}", $data);
+        }
+
+        // 2. Cek view generik di folder role: {folder}.{index|form}
+        if ($folder && view()->exists("{$folder}.{$type}")) {
+            return view("{$folder}.{$type}", $data);
+        }
+
+        // 3. Fallback generic
+        return view("modules.{$type}", $data);
+    }
 }
