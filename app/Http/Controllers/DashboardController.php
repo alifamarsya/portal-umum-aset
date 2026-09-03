@@ -69,7 +69,22 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        return view('dashboard', compact(
+        $role = auth()->user()?->role?->nama;
+        $folder = match ($role) {
+            'superadmin' => 'admin',
+            'pimpinan'   => 'pimpinan',
+            'umum_rt'    => 'umum',
+            'aset'       => 'aset',
+            'pengadaan'  => 'pengadaan',
+            default      => null,
+        };
+
+        // Jika view spesifik per folder role ada, gunakan itu. Jika tidak, fallback ke default.
+        $viewName = ($folder && view()->exists("{$folder}.dashboard"))
+            ? "{$folder}.dashboard"
+            : 'dashboard';
+
+        return view($viewName, compact(
             'menunggu',
             'reminderAktif',
             'pksJatuhTempo',
