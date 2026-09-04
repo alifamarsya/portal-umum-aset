@@ -11,7 +11,7 @@ use Illuminate\Console\Command;
 // sehingga rantai kembali valid setelah simulasi manipulasi sengaja.
 class RepairAuditChainCommand extends Command
 {
-    protected $signature   = 'audit:repair-chain {--from=1 : Mulai perbaiki dari ID berapa}';
+    protected $signature   = 'audit:repair-chain {--from=1 : Mulai perbaiki dari ID berapa} {--force : Jalankan tanpa konfirmasi}';
     protected $description = '[DEMO ONLY] Hitung ulang hash seluruh rantai audit_log mulai dari ID tertentu';
 
     public function handle(): int
@@ -20,7 +20,7 @@ class RepairAuditChainCommand extends Command
 
         $this->warn("⚠️  [DEMO] Menghitung ulang rantai hash mulai dari log id >= {$fromId} ...");
 
-        if (!$this->confirm('Lanjutkan? (Ini akan mengubah hash di database)')) {
+        if (!$this->option('force') && !$this->confirm('Lanjutkan? (Ini akan mengubah hash di database)')) {
             $this->info('Dibatalkan.');
             return self::SUCCESS;
         }
@@ -35,11 +35,18 @@ class RepairAuditChainCommand extends Command
             ->orderBy('id')
             ->chunk(500, function ($logs) use (&$expectedPrev, &$diperbaiki) {
                 foreach ($logs as $log) {
-                    // Hitung ulang hash dari data mentah yang ada di baris ini
-                    $hashBaru = hash(
-                        'sha256',
-                        $expectedPrev . '|' . $log->aksi . '|' . $log->modul . '|'
-                        . $log->entitas . '|' . $log->entitas_id . '|' . $log->keterangan . '|' . $log->created_at
+                    $createdAtStr = is_string($log->created_at)
+                        ? $log->created_at
+                        : $log->created_at->format('Y-m-d H:i:s');
+
+                    $hashBaru = app(\App\Services\AuditHasher::class)->hitungHash(
+                        $expectedPrev,
+                        (string) $log->aksi,
+                        (string) $log->modul,
+                        (string) $log->entitas,
+                        $log->entitas_id,
+                        $log->keterangan,
+                        $createdAtStr
                     );
 
                     // Update prev_hash dan hash di database langsung (bypass Eloquent booted)

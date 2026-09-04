@@ -1,5 +1,5 @@
-// blockchain-anchor/anchor.js
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, ".env") });
 const { ethers } = require("ethers");
 
 // ABI = "daftar fungsi" contract yang boleh dipanggil dari luar.

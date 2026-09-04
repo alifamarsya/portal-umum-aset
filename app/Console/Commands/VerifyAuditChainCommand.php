@@ -27,10 +27,21 @@ class VerifyAuditChainCommand extends Command
                     $rusak++;
                 }
 
-                $hitung = hash('sha256', $log->prev_hash . '|' . $log->aksi . '|' . $log->modul . '|'
-                    . $log->entitas . '|' . $log->entitas_id . '|' . $log->keterangan . '|' . $log->created_at);
+                $createdAtStr = is_string($log->created_at)
+                    ? $log->created_at
+                    : $log->created_at->format('Y-m-d H:i:s');
 
-                if (!hash_equals($hitung, $log->hash)) {
+                $hitung = app(\App\Services\AuditHasher::class)->hitungHash(
+                    $log->prev_hash,
+                    (string) $log->aksi,
+                    (string) $log->modul,
+                    (string) $log->entitas,
+                    $log->entitas_id,
+                    $log->keterangan,
+                    $createdAtStr
+                );
+
+                if (!app(\App\Services\AuditHasher::class)->cocok($log->hash, $hitung)) {
                     $this->error("Hash tidak cocok di log #{$log->id} -- kemungkinan data dimodifikasi langsung di database.");
                     $rusak++;
                 }

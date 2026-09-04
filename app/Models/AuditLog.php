@@ -34,8 +34,19 @@ class AuditLog extends Model
             $prev = static::orderByDesc('id')->first();
             $log->prev_hash = $prev?->hash;
             $log->created_at = $log->created_at ?? now();
-            $log->hash = hash('sha256', $log->prev_hash . '|' . $log->aksi . '|' . $log->modul . '|'
-                . $log->entitas . '|' . $log->entitas_id . '|' . $log->keterangan . '|' . $log->created_at);
+            $createdAtStr = is_string($log->created_at)
+                ? $log->created_at
+                : $log->created_at->format('Y-m-d H:i:s');
+
+            $log->hash = app(\App\Services\AuditHasher::class)->hitungHash(
+                $log->prev_hash,
+                (string) $log->aksi,
+                (string) $log->modul,
+                (string) $log->entitas,
+                $log->entitas_id,
+                $log->keterangan,
+                $createdAtStr
+            );
         });
     }
 
