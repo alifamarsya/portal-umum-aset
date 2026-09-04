@@ -34,6 +34,7 @@ class AuditLog extends Model
             $prev = static::orderByDesc('id')->first();
             $log->prev_hash = $prev?->hash;
             $log->created_at = $log->created_at ?? now();
+
             $createdAtStr = is_string($log->created_at)
                 ? $log->created_at
                 : $log->created_at->format('Y-m-d H:i:s');

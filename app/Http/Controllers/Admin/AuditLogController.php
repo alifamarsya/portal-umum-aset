@@ -28,6 +28,7 @@ class AuditLogController extends Controller
 
         // 2. Verifikasi Rantai Hash per Baris (Hash Chain Verification)
         $expectedPrev = null;
+        // Kita urutkan dari ID terkecil (awal) untuk memverifikasi konsistensi rantai
         $allLogs = AuditLog::orderBy('id', 'asc')->get();
         $tamperedIds = [];
 
@@ -59,6 +60,7 @@ class AuditLogController extends Controller
             }
 
             if ($isTampered) {
+                // Tandai ID ini sebagai baris yang dimanipulasi
                 $tamperedIds[] = $log->id;
             }
 
@@ -74,18 +76,9 @@ class AuditLogController extends Controller
         // 3. Verifikasi Root Hash Blockchain
         $anchors = AuditLogAnchor::latest()->take(10)->get();
         $anchors->transform(function ($anchor) {
-            $query = AuditLog::whereBetween('created_at', [
-                Carbon::parse($anchor->periode_awal)->startOfDay(),
-                Carbon::parse($anchor->periode_akhir)->endOfDay(),
-            ]);
-
-            // Jika anchor dibuat pada periode yang sedang berjalan,
-            // batasi verifikasi pada data log yang ada hingga saat anchoring dibuat.
-            if ($anchor->created_at && $anchor->created_at <= Carbon::parse($anchor->periode_akhir)->endOfDay()) {
-                $query->where('created_at', '<=', $anchor->created_at);
-            }
-
-            $hashes = $query->orderBy('id')->pluck('hash');
+            $hashes = AuditLog::whereBetween('created_at', [$anchor->periode_awal, $anchor->periode_akhir])
+                ->orderBy('id')
+                ->pluck('hash');
 
             if ($hashes->isEmpty()) {
                 $anchor->is_valid = true;
@@ -94,7 +87,7 @@ class AuditLogController extends Controller
 
             $currentRootHash = '0x' . hash('sha256', $hashes->implode(''));
             $anchor->is_valid = ($currentRootHash === $anchor->root_hash);
-
+            
             return $anchor;
         });
 
@@ -111,7 +104,8 @@ class AuditLogController extends Controller
                 ? $log->created_at
                 : $log->created_at->format('Y-m-d H:i:s');
 
-            $hashBaru = $hasher->hitungHash(
+            // Hitung ulang hash menggunakan AuditHasher service
+            $newHash = $hasher->hitungHash(
                 $expectedPrev,
                 (string) $log->aksi,
                 (string) $log->modul,
@@ -120,15 +114,13 @@ class AuditLogController extends Controller
                 $log->keterangan,
                 $createdAtStr
             );
-
-            DB::table('audit_log')
-                ->where('id', $log->id)
-                ->update([
-                    'prev_hash' => $expectedPrev,
-                    'hash'      => $hashBaru,
-                ]);
-
-            $expectedPrev = $hashBaru;
+            
+            $log->update([
+                'prev_hash' => $expectedPrev,
+                'hash'      => $newHash,
+            ]);
+            
+            $expectedPrev = $newHash;
         }
 
         return back()->with('success', 'Rantai hash berhasil disinkronkan kembali!');
