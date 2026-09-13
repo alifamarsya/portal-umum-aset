@@ -1,7 +1,6 @@
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, ".env") });
 const { ethers } = require("ethers");
-
 // ABI = "daftar fungsi" contract yang boleh dipanggil dari luar.
 // Cukup fungsi anchorHash saja yang kita butuhkan di sini.
 const ABI = ["function anchorHash(bytes32 _rootHash) public"];
