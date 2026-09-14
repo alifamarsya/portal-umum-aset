@@ -402,6 +402,13 @@
             </div>
         @endif
 
+        @if (session('error'))
+            <div class="mb-5 flex items-center gap-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 px-4 py-3 text-sm animate-enter">
+                @include('partials.icon', ['name' => 'alert', 'class' => 'w-5 h-5 text-rose-600 flex-shrink-0', 'stroke' => 2])
+                <span class="font-medium">{{ session('error') }}</span>
+            </div>
+        @endif
+
         @if ($errors->any())
             <div class="mb-5 flex items-start gap-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 px-4 py-3 text-sm animate-enter">
                 @include('partials.icon', ['name' => 'alert', 'class' => 'w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5', 'stroke' => 2])
