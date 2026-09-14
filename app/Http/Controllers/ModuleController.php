@@ -7,16 +7,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use App\Services\AmortisasiCalculator;
 
-// Mesin CRUD generik untuk 20 modul transaksional Portum, setara "RES"
-// di portum.py -- satu controller melayani semua modul lewat {key} di
-// route, konfigurasinya diambil dari config/modules.php. Menjaga arsitektur
-// aslinya (config-driven), tapi sekarang di atas Eloquent + Laravel RBAC.
+// Mesin CRUD generik untuk 20 modul transaksional Portum
 class ModuleController extends Controller
 {
     use LogsAudit;
+
     public function __construct(private AmortisasiCalculator $amortisasiCalculator)
     {
     }
+
     private function config(string $key): array
     {
         $cfg = config("modules.$key");
@@ -88,7 +87,7 @@ class ModuleController extends Controller
         return $this->resolveView('index', $key, compact('cfg', 'items', 'key'));
     }
 
- public function create(string $key)
+    public function create(string $key)
     {
         $cfg = $this->authorizeModule($key, 'write');
         return $this->resolveView('form', $key, ['cfg' => $cfg, 'key' => $key, 'item' => null]);
@@ -100,12 +99,26 @@ class ModuleController extends Controller
         $data = $this->validated($request, $cfg);
         $data = $this->hitungAmortisasiJikaPerlu($key, $data);
 
+        // ===== PERBAIKAN UTAMA (semua modul) =====
+        // Hapus field yang nilainya null supaya default database dipakai
+        // Mencegah error: Column 'xxx' cannot be null
+        $data = array_filter($data, function ($value) {
+            return !is_null($value);
+        });
+        // ========================================
+
         if ($cfg['maker_checker']) {
             $data['maker_id'] = auth()->id();
             $data['approval_status'] = 'Diajukan';
         }
+
         if (array_key_exists('dibuat_oleh', $cfg['fields'])) {
-            $data['dibuat_oleh'] = auth()->user()->nama_lengkap;
+            $data['dibuat_oleh'] = auth()->user()->nama_lengkap ?? auth()->user()->name;
+        }
+
+        // Fallback status jika masih kosong
+        if (empty($data['status'])) {
+            $data['status'] = 'Draft';
         }
 
         $item = $cfg['model']::create($data);
@@ -118,7 +131,7 @@ class ModuleController extends Controller
     {
         $cfg = $this->authorizeModule($key, 'write');
         $item = $cfg['model']::findOrFail($id);
-       return $this->resolveView('form', $key, ['cfg' => $cfg, 'key' => $key, 'item' => $item]);
+        return $this->resolveView('form', $key, ['cfg' => $cfg, 'key' => $key, 'item' => $item]);
     }
 
     public function update(Request $request, string $key, int $id)
@@ -127,6 +140,16 @@ class ModuleController extends Controller
         $item = $cfg['model']::findOrFail($id);
         $data = $this->validated($request, $cfg);
         $data = $this->hitungAmortisasiJikaPerlu($key, $data);
+
+        // Hapus null supaya tidak menimpa data lama dengan null
+        $data = array_filter($data, function ($value) {
+            return !is_null($value);
+        });
+
+        // Fallback status
+        if (array_key_exists('status', $data) && empty($data['status'])) {
+            $data['status'] = $item->status ?? 'Draft';
+        }
 
         $item->update($data);
         $this->audit('UPDATE', $cfg['modul'], $cfg['judul'], $item->id, 'Mengubah data');
@@ -144,7 +167,7 @@ class ModuleController extends Controller
         return redirect()->route('modul.index', $key)->with('status', "{$cfg['judul']} berhasil dihapus.");
     }
 
-    // --- Alur Maker-Checker (CPMK Blockchain) ---
+    // --- Alur Maker-Checker ---
 
     public function approve(string $key, int $id)
     {
@@ -185,44 +208,72 @@ class ModuleController extends Controller
 
     private function validated(Request $request, array $cfg): array
     {
+        // 1. Ambil semua input
+        $input = $request->all();
+
+        // 2. Ubah string kosong menjadi null
+        foreach ($input as $key => $value) {
+            if (is_string($value) && trim($value) === '') {
+                $input[$key] = null;
+            }
+        }
+
+        // 3. Khusus field money & number yang kosong → set ke 0
+        foreach ($cfg['fields'] as $field => $meta) {
+            $type = $meta['type'] ?? 'text';
+            if (in_array($type, ['money', 'number']) && array_key_exists($field, $input) && $input[$field] === null) {
+                $input[$field] = 0;
+            }
+        }
+
+        $request->merge($input);
+
+        // 4. Bangun rules validasi
         $rules = [];
         foreach ($cfg['fields'] as $field => $meta) {
             $type = $meta['type'] ?? 'text';
-            $rule = ($meta['req'] ?? false) ? 'required' : 'nullable';
+            $isRequired = $meta['req'] ?? false;
+
+            $rule = $isRequired ? 'required' : 'nullable';
+
             $rule .= match ($type) {
-                'date' => '|date',
+                'date'            => '|date',
                 'number', 'money' => '|numeric|min:0',
-                'checkbox' => '|boolean',
-                'file' => '|string',
-                'select' => isset($meta['opts']) ? '|string|in:' . implode(',', $meta['opts']) : '|string|max:2000',
-                default => '|string|max:2000',
+                'checkbox'        => '|boolean',
+                'file'            => '|string|max:500',
+                'select'          => isset($meta['opts'])
+                                        ? '|string|in:' . implode(',', $meta['opts'])
+                                        : '|string|max:2000',
+                default           => '|string|max:2000',
             };
+
             $rules[$field] = $rule;
         }
+
         return $request->validate($rules);
     }
 
     private function hitungAmortisasiJikaPerlu(string $key, array $data): array
-{
-    if ($key !== 'amortisasi') {
+    {
+        if ($key !== 'amortisasi') {
+            return $data;
+        }
+
+        if (empty($data['nilai_per_bulan']) && !empty($data['nilai_perolehan']) && !empty($data['umur_bulan'])) {
+            $data['nilai_per_bulan'] = $this->amortisasiCalculator->hitungNilaiPerBulan(
+                (float) $data['nilai_perolehan'],
+                (int) $data['umur_bulan']
+            );
+        }
+
+        if (!empty($data['tanggal_mulai']) && !empty($data['nilai_per_bulan'])) {
+            $bulanBerjalan = $this->amortisasiCalculator->hitungBulanBerjalan(new \DateTime($data['tanggal_mulai']));
+            $data['akumulasi'] = $this->amortisasiCalculator->hitungAkumulasi((float) $data['nilai_per_bulan'], $bulanBerjalan);
+            $data['nilai_buku'] = $this->amortisasiCalculator->hitungNilaiBuku((float) $data['nilai_perolehan'], $data['akumulasi']);
+        }
+
         return $data;
     }
-
-    if (empty($data['nilai_per_bulan']) && !empty($data['nilai_perolehan']) && !empty($data['umur_bulan'])) {
-        $data['nilai_per_bulan'] = $this->amortisasiCalculator->hitungNilaiPerBulan(
-            (float) $data['nilai_perolehan'],
-            (int) $data['umur_bulan']
-        );
-    }
-
-    if (!empty($data['tanggal_mulai']) && !empty($data['nilai_per_bulan'])) {
-        $bulanBerjalan = $this->amortisasiCalculator->hitungBulanBerjalan(new \DateTime($data['tanggal_mulai']));
-        $data['akumulasi'] = $this->amortisasiCalculator->hitungAkumulasi((float) $data['nilai_per_bulan'], $bulanBerjalan);
-        $data['nilai_buku'] = $this->amortisasiCalculator->hitungNilaiBuku((float) $data['nilai_perolehan'], $data['akumulasi']);
-    }
-
-    return $data;
-}
 
     private function resolveView(string $type, string $key, array $data = []): \Illuminate\Contracts\View\View
     {
@@ -236,12 +287,12 @@ class ModuleController extends Controller
             default      => null,
         };
 
-        // 1. Cek view spesifik modul di folder role: {folder}.{key}.{index|form}
+        // 1. Cek view spesifik modul di folder role
         if ($folder && view()->exists("{$folder}.{$key}.{$type}")) {
             return view("{$folder}.{$key}.{$type}", $data);
         }
 
-        // 2. Cek view generik di folder role: {folder}.{index|form}
+        // 2. Cek view generik di folder role
         if ($folder && view()->exists("{$folder}.{$type}")) {
             return view("{$folder}.{$type}", $data);
         }
