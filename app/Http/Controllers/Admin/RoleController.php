@@ -7,12 +7,25 @@ use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\RolePermission;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class RoleController extends Controller
 {
     use LogsAudit;
 
     const MODULE_GROUPS = [
+        'Pengajuan & Monitoring' => [
+            'dashboard' => [
+                'label' => 'Dashboard Monitoring',
+                'desc' => 'Ringkasan eksekutif, widget ringkasan status operasional dan statistik',
+                'icon' => 'home'
+            ],
+            'tiket' => [
+                'label' => 'Sistem Tiket Pengajuan',
+                'desc' => 'Layanan tiket pengajuan operasional, alokasi/disposisi, verifikasi, dan pengerjaan',
+                'icon' => 'inbox'
+            ],
+        ],
         'Operasional' => [
             'umum_rt' => [
                 'label' => 'Umum & Rumah Tangga',
@@ -30,22 +43,12 @@ class RoleController extends Controller
                 'icon' => 'cart'
             ],
             'risalah' => [
-                'label' => 'Risalah Rapat',
-                'desc' => 'Arsip risalah rapat, tindak lanjut keputusan, dan monitoring rapat',
+                'label' => 'Arsip Surat & Memo',
+                'desc' => 'Arsip surat masuk/keluar, memo masuk/keluar, dan risalah rapat',
                 'icon' => 'archive'
             ],
         ],
-        'Sistem & Referensi' => [
-            'dashboard' => [
-                'label' => 'Dashboard Utama',
-                'desc' => 'Ringkasan eksekutif, widget ringkasan, dan status operasional',
-                'icon' => 'home'
-            ],
-            'analytics_dw' => [
-                'label' => 'Data Warehouse & Analitik',
-                'desc' => 'Analitik tren biaya, data warehouse, dan ekspor CSV agregat',
-                'icon' => 'chart'
-            ],
+        'Referensi & SOP' => [
             'panduan' => [
                 'label' => 'Panduan Sistem (SOP)',
                 'desc' => 'Standar operasional prosedur dan panduan penggunaan aplikasi',
@@ -53,7 +56,7 @@ class RoleController extends Controller
             ],
             'ref_akun' => [
                 'label' => 'Referensi Akun & Sandi',
-                'desc' => 'Master data kode akun anggaran dan referensi transaksi',
+                'desc' => 'Master data kode akun anggaran (COA) dan referensi transaksi',
                 'icon' => 'file-text'
             ],
         ],
@@ -108,11 +111,10 @@ class RoleController extends Controller
         foreach ($request->input('perms', []) as $key => $permVal) {
             $hasAccess = !empty($permVal['access']) || !empty($permVal['write']);
             if ($hasAccess) {
-                RolePermission::create([
-                    'role_id' => $role->id,
-                    'perm_key' => $key,
-                    'can_write' => !empty($permVal['write']),
-                ]);
+                DB::table('role_permissions')->updateOrInsert(
+                    ['role_id' => $role->id, 'perm_key' => $key],
+                    ['can_write' => !empty($permVal['write'])]
+                );
             }
         }
 
@@ -128,7 +130,7 @@ class RoleController extends Controller
             'deskripsi' => 'nullable|string|max:255',
         ];
 
-        $isSystemRole = in_array($role->nama, ['superadmin', 'pimpinan']) || $role->id <= 2;
+        $isSystemRole = in_array($role->nama, ['admin', 'superadmin', 'pimpinan']) || $role->id <= 2;
         if (!$isSystemRole) {
             $rules['nama'] = 'required|string|max:50|regex:/^[a-z0-9_]+$/|unique:roles,nama,' . $role->id;
         }
@@ -146,7 +148,7 @@ class RoleController extends Controller
     public function destroy(Role $role)
     {
         // Proteksi 1: Role sistem bawaan tidak boleh dihapus
-        if (in_array($role->nama, ['superadmin', 'pimpinan']) || $role->id <= 2) {
+        if (in_array($role->nama, ['admin', 'superadmin', 'pimpinan']) || $role->id <= 2) {
             return back()->with('error', "Role sistem bawaan '{$role->label}' dilindungi dan tidak dapat dihapus.");
         }
 
@@ -182,13 +184,14 @@ class RoleController extends Controller
             $canWrite = $request->boolean("write_{$key}");
 
             if ($hasAccess) {
-                RolePermission::updateOrCreate(
+                DB::table('role_permissions')->updateOrInsert(
                     ['role_id' => $role->id, 'perm_key' => $key],
                     ['can_write' => $canWrite]
                 );
             } else {
                 // Jika tidak diberi akses sama sekali, hapus dari tabel role_permissions
-                RolePermission::where('role_id', $role->id)
+                DB::table('role_permissions')
+                    ->where('role_id', $role->id)
                     ->where('perm_key', $key)
                     ->delete();
             }

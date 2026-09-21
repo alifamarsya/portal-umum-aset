@@ -70,11 +70,11 @@ class UserController extends Controller
             return back()->with('error', 'Anda tidak dapat menonaktifkan akun Anda sendiri yang sedang aktif.');
         }
 
-        // Proteksi: tidak boleh mengubah role superadmin terakhir
-        if ($user->role?->nama === 'superadmin' && (int) $data['role_id'] !== $user->role_id) {
-            $superadminCount = User::whereHas('role', fn ($q) => $q->where('nama', 'superadmin'))->count();
-            if ($superadminCount <= 1) {
-                return back()->with('error', 'Tidak dapat mengubah role satu-satunya Super Administrator.');
+        // Proteksi: tidak boleh mengubah role admin terakhir
+        if (in_array($user->role?->nama, ['admin', 'superadmin']) && (int) $data['role_id'] !== $user->role_id) {
+            $adminCount = User::whereHas('role', fn ($q) => $q->whereIn('nama', ['admin', 'superadmin']))->count();
+            if ($adminCount <= 1) {
+                return back()->with('error', 'Tidak dapat mengubah role satu-satunya Administrator.');
             }
         }
 
@@ -128,11 +128,11 @@ class UserController extends Controller
             return back()->with('error', 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif.');
         }
 
-        // Proteksi 2: Tidak boleh menghapus satu-satunya superadmin
-        if ($user->role?->nama === 'superadmin') {
-            $superadminCount = User::whereHas('role', fn ($q) => $q->where('nama', 'superadmin'))->count();
-            if ($superadminCount <= 1) {
-                return back()->with('error', 'Tidak dapat menghapus satu-satunya akun Super Administrator.');
+        // Proteksi 2: Tidak boleh menghapus satu-satunya admin
+        if (in_array($user->role?->nama, ['admin', 'superadmin'])) {
+            $adminCount = User::whereHas('role', fn ($q) => $q->whereIn('nama', ['admin', 'superadmin']))->count();
+            if ($adminCount <= 1) {
+                return back()->with('error', 'Tidak dapat menghapus satu-satunya akun Administrator.');
             }
         }
 
