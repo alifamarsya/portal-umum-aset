@@ -9,6 +9,9 @@ class RolePermission extends Model
     protected $table = 'role_permissions';
 
     public $timestamps = false;
+
+    protected $primaryKey = ['role_id', 'perm_key'];
+    public $incrementing = false;
     
     protected $fillable = [
         'role_id',
