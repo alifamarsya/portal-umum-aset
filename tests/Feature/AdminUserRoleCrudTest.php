@@ -26,6 +26,9 @@ class AdminUserRoleCrudTest extends TestCase
         $this->rolePimpinan = Role::create(['id' => 2, 'nama' => 'pimpinan', 'label' => 'Pimpinan Divisi']);
         $this->roleStaff = Role::create(['id' => 3, 'nama' => 'umum_rt', 'label' => 'Staf Umum & RT']);
 
+        RolePermission::create(['role_id' => $this->roleAdmin->id, 'perm_key' => 'user_mgmt', 'can_write' => true]);
+        RolePermission::create(['role_id' => $this->roleAdmin->id, 'perm_key' => 'role_mgmt', 'can_write' => true]);
+
         $this->admin = User::factory()->create([
             'username' => 'admin_test',
             'role_id' => $this->roleAdmin->id,
@@ -142,8 +145,8 @@ class AdminUserRoleCrudTest extends TestCase
         $response = $this->actingAs($this->admin)->post(route('admin.roles.permissions', $role), [
             'access_umum_rt' => '1',
             'write_umum_rt' => '1',
-            'access_analytics_dw' => '1',
-            'write_analytics_dw' => '0',
+            'access_tiket' => '1',
+            'write_tiket' => '0',
             // pengadaan is not checked
         ]);
 
@@ -157,7 +160,7 @@ class AdminUserRoleCrudTest extends TestCase
 
         $this->assertDatabaseHas('role_permissions', [
             'role_id' => $role->id,
-            'perm_key' => 'analytics_dw',
+            'perm_key' => 'tiket',
             'can_write' => 0,
         ]);
 
