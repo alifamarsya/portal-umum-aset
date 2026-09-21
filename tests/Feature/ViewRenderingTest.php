@@ -24,6 +24,15 @@ class ViewRenderingTest extends TestCase
         $rolePimpinan = Role::create(['nama' => 'pimpinan', 'label' => 'Pimpinan Divisi']);
         $roleStaff = Role::create(['nama' => 'umum_rt', 'label' => 'Staf Umum & RT']);
 
+        foreach (['dashboard', 'umum_rt', 'risalah', 'panduan'] as $perm) {
+            RolePermission::create(['role_id' => $roleAdmin->id, 'perm_key' => $perm, 'can_write' => true]);
+        }
+
+        RolePermission::create(['role_id' => $rolePimpinan->id, 'perm_key' => 'dashboard', 'can_write' => false]);
+        RolePermission::create(['role_id' => $rolePimpinan->id, 'perm_key' => 'umum_rt', 'can_write' => false]);
+        RolePermission::create(['role_id' => $rolePimpinan->id, 'perm_key' => 'risalah', 'can_write' => false]);
+
+        RolePermission::create(['role_id' => $roleStaff->id, 'perm_key' => 'dashboard', 'can_write' => false]);
         RolePermission::create(['role_id' => $roleStaff->id, 'perm_key' => 'umum_rt', 'can_write' => true]);
         RolePermission::create(['role_id' => $roleStaff->id, 'perm_key' => 'risalah', 'can_write' => true]);
 
