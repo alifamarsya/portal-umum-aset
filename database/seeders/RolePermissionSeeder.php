@@ -9,30 +9,62 @@ use Illuminate\Support\Facades\DB;
 
 class RolePermissionSeeder extends Seeder
 {
-    // Data role & matriks permission dipindahkan 1:1 dari portum.py (fungsi init_db),
-    // supaya perilaku hak akses tidak berubah saat cutover ke Laravel.
+    // Struktur role baru v2.0 — mendukung sistem tiket multi-bagian.
+    // ID sengaja tidak berurutan agar mudah dikelompokkan:
+    //   1-2   = manajemen (admin, pimpinan)
+    //   6-7   = end-user (user/pemohon, operator)
+    //   10-12 = kepala bagian
+    //   13-15 = staf bagian
     public function run(): void
     {
         $roles = [
-            ['id' => 1, 'nama' => 'superadmin', 'label' => 'Super Administrator', 'deskripsi' => 'Akses pengaturan sistem & lihat semua modul (read-only)'],
-            ['id' => 2, 'nama' => 'pimpinan', 'label' => 'Pimpinan Divisi', 'deskripsi' => 'Akses checker (approval) & monitoring seluruh modul'],
-            ['id' => 3, 'nama' => 'umum_rt', 'label' => 'Staf Umum & Rumah Tangga', 'deskripsi' => 'Maker Bagian Umum & Rumah Tangga'],
-            ['id' => 4, 'nama' => 'aset', 'label' => 'Staf Aset & Logistik', 'deskripsi' => 'Maker Bagian Aset/Inventaris & Logistik'],
-            ['id' => 5, 'nama' => 'pengadaan', 'label' => 'Staf Pengadaan', 'deskripsi' => 'Maker Bagian Pengadaan & Pemeliharaan Aset'],
+            ['id' => 1,  'nama' => 'admin',           'label' => 'Admin',                              'deskripsi' => 'Manajemen user, role, audit log, dan supervisi tiket'],
+            ['id' => 2,  'nama' => 'pimpinan',         'label' => 'Pimpinan Divisi',                   'deskripsi' => 'Monitoring seluruh tiket dan laporan'],
+            ['id' => 6,  'nama' => 'user',             'label' => 'User / Pemohon',                    'deskripsi' => 'Mengajukan tiket layanan (dapat banyak akun)'],
+            ['id' => 7,  'nama' => 'operator',         'label' => 'Operator / Helpdesk',               'deskripsi' => 'Menerima, mereview, dan mengalokasikan tiket ke bagian'],
+            ['id' => 10, 'nama' => 'kabag_umum',       'label' => 'Kepala Bagian Umum & Rumah Tangga', 'deskripsi' => 'Memberi keputusan tiket di Bagian Umum & RT'],
+            ['id' => 11, 'nama' => 'kabag_aset',       'label' => 'Kepala Bagian Aset & Logistik',     'deskripsi' => 'Memberi keputusan tiket di Bagian Aset & Logistik'],
+            ['id' => 12, 'nama' => 'kabag_pengadaan',  'label' => 'Kepala Bagian Pengadaan',           'deskripsi' => 'Memberi keputusan tiket di Bagian Pengadaan'],
+            ['id' => 13, 'nama' => 'staf_umum',        'label' => 'Staf Bagian Umum & Rumah Tangga',   'deskripsi' => 'Mengerjakan tiket yang dialokasikan ke Bagian Umum & RT'],
+            ['id' => 14, 'nama' => 'staf_aset',        'label' => 'Staf Bagian Aset & Logistik',       'deskripsi' => 'Mengerjakan tiket yang dialokasikan ke Bagian Aset & Logistik'],
+            ['id' => 15, 'nama' => 'staf_pengadaan',   'label' => 'Staf Bagian Pengadaan',             'deskripsi' => 'Mengerjakan tiket yang dialokasikan ke Bagian Pengadaan'],
         ];
+
         foreach ($roles as $r) {
             Role::updateOrCreate(['id' => $r['id']], $r);
         }
 
+        // Hapus role lama yang tidak terpakai (umum_rt=3, aset=4, pengadaan=5)
+        Role::whereIn('id', [3, 4, 5])->delete();
+
+        // Matriks permission:
+        // [role_id, perm_key, can_write]
         $perms = [
-            [1, 'dashboard', 1], [1, 'umum_rt', 0], [1, 'aset_logistik', 0], [1, 'pengadaan', 0], [1, 'risalah', 0],
-            [1, 'panduan', 0], [1, 'analytics_dw', 0], [1, 'user_mgmt', 1], [1, 'role_mgmt', 1], [1, 'audit_log', 1], [1, 'ref_akun', 0],
-            [2, 'dashboard', 0], [2, 'analytics_dw', 0], [2, 'umum_rt', 0], [2, 'aset_logistik', 0], [2, 'pengadaan', 0], [2, 'risalah', 0],
-            [2, 'panduan', 0], [2, 'audit_log', 0], [2, 'ref_akun', 0],
-            [3, 'dashboard', 1], [3, 'umum_rt', 1], [3, 'risalah', 1], [3, 'panduan', 0], [3, 'ref_akun', 0],
-            [4, 'dashboard', 1], [4, 'aset_logistik', 1], [4, 'risalah', 1], [4, 'panduan', 0], [4, 'ref_akun', 0],
-            [5, 'dashboard', 1], [5, 'pengadaan', 1], [5, 'risalah', 1], [5, 'panduan', 0], [5, 'ref_akun', 0],
+            // Admin: akses penuh ke manajemen
+            [1, 'dashboard',     1], [1, 'tiket',      1], [1, 'user_mgmt',  1],
+            [1, 'role_mgmt',     1], [1, 'audit_log',  1], [1, 'analytics_dw', 0],
+
+            // Pimpinan: monitoring semua, tidak bisa write
+            [2, 'dashboard',     0], [2, 'tiket',      0], [2, 'analytics_dw', 0],
+            [2, 'audit_log',     0],
+
+            // User / Pemohon: hanya buat dan lihat tiket sendiri
+            [6, 'dashboard',     0], [6, 'tiket',      1],
+
+            // Operator: alokasikan tiket
+            [7, 'dashboard',     1], [7, 'tiket',      1],
+
+            // Kabag: approve/reject tiket di bagiannya
+            [10, 'dashboard',    1], [10, 'tiket',     1],
+            [11, 'dashboard',    1], [11, 'tiket',     1],
+            [12, 'dashboard',    1], [12, 'tiket',     1],
+
+            // Staf: kerjakan tiket di bagiannya
+            [13, 'dashboard',    1], [13, 'tiket',     1],
+            [14, 'dashboard',    1], [14, 'tiket',     1],
+            [15, 'dashboard',    1], [15, 'tiket',     1],
         ];
+
         foreach ($perms as [$roleId, $key, $write]) {
             DB::table('role_permissions')->updateOrInsert(
                 ['role_id' => $roleId, 'perm_key' => $key],
