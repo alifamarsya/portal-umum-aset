@@ -23,9 +23,13 @@
     $user = auth()->user();
     $permissions = $user?->role?->permissions?->keyBy('perm_key') ?? collect();
 
-    $canAccess = fn (string $key) => in_array($user?->role?->nama, ['superadmin', 'pimpinan']) || $permissions->has($key);
-    $canWrite  = fn (string $key) => !in_array($user?->role?->nama, ['superadmin', 'pimpinan']) && (bool) optional($permissions->get($key))->can_write;
+    $canAccess = fn (string $key) => $user ? $user->canAccessModule($key) : false;
+    $canWrite  = fn (string $key) => $user ? $user->canWriteModule($key) : false;
     $isChecker = fn () => $user?->role?->nama === 'pimpinan';
+
+    $canAccessDashboard = $canAccess('dashboard');
+    $canAccessTiket     = $canAccess('tiket');
+    $hasPengajuanMonitoring = $canAccessDashboard || $canAccessTiket;
 
     $operationalGroups = [
         [
@@ -77,6 +81,8 @@
         ],
     ];
 
+    $visibleOperationalGroups = collect($operationalGroups)->filter(fn ($group) => $canAccess($group['perm']));
+
     $referenceItems = [
         ['perm' => 'risalah', 'label' => 'Risalah Rapat', 'route' => 'risalah.index', 'active' => request()->routeIs('risalah.*'), 'icon' => 'file-text'],
         ['perm' => 'panduan', 'label' => 'Buku Panduan', 'route' => 'panduan.index', 'active' => request()->routeIs('panduan.*'), 'icon' => 'book'],
@@ -100,77 +106,52 @@
     <div class="flex-1 flex flex-col bg-gradient-to-b from-[#114E84] via-[#0E4272] to-[#0A335A] text-white rounded-tr-[36px] rounded-br-[36px] overflow-hidden shadow-2xl">
         {{-- Navigation Menu --}}
         <nav class="flex-1 overflow-y-auto pt-4 pb-2 space-y-4 text-[13px]">
-            {{-- Menu Utama --}}
-            <div>
-                <div class="space-y-1">
-                    {{-- Active / Inactive Dashboard --}}
-                    @if (request()->routeIs('dashboard'))
-                        <div class="px-3">
-                            <a href="{{ route('dashboard') }}"
-                               class="flex items-center justify-between gap-3 py-2 px-3 rounded-xl bg-canvas text-[#114E84] font-bold shadow-2xs">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-6 h-6 flex items-center justify-center text-[#114E84]">
-                                        @include('partials.icon', ['name' => 'home', 'class' => 'w-[18px] h-[18px]'])
-                                    </div>
-                                    <span>Dashboard</span>
-                                </div>
-                                <span class="text-[#114E84] text-xs">▸</span>
-                            </a>
-                        </div>
-                    @else
-                        <div class="px-3">
-                            <a href="{{ route('dashboard') }}"
-                               class="flex items-center justify-between gap-3 py-2 px-3 rounded-xl text-white/90 hover:bg-white/10 hover:text-white transition">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-6 h-6 flex items-center justify-center text-white/80">
-                                        @include('partials.icon', ['name' => 'home', 'class' => 'w-[18px] h-[18px]'])
-                                    </div>
-                                    <span>Dashboard</span>
-                                </div>
-                                <span class="text-white/40 text-xs">▸</span>
-                            </a>
-                        </div>
-                    @endif
-
-                    {{-- Analitik DW --}}
-                    @if ($canAccess('analytics_dw'))
-                        @if (request()->routeIs('analitik*'))
+            {{-- Modul Pengajuan & Monitoring --}}
+            @if ($hasPengajuanMonitoring)
+                <div>
+                    <p class="px-5 mb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">Pengajuan &amp; Monitoring</p>
+                    <div class="space-y-1">
+                        {{-- Submodul Dashboard --}}
+                        @if ($canAccessDashboard)
                             <div class="px-3">
-                                <a href="{{ route('analitik') }}"
-                                   class="flex items-center justify-between gap-3 py-2 px-3 rounded-xl bg-canvas text-[#114E84] font-bold shadow-2xs">
+                                <a href="{{ route('dashboard') }}"
+                                   class="flex items-center justify-between gap-3 py-2 px-3 rounded-xl transition {{ request()->routeIs('dashboard') ? 'bg-canvas text-[#114E84] font-bold shadow-2xs' : 'text-white/90 hover:bg-white/10 hover:text-white' }}">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-6 h-6 flex items-center justify-center text-[#114E84]">
-                                            @include('partials.icon', ['name' => 'chart', 'class' => 'w-[18px] h-[18px]'])
+                                        <div class="w-6 h-6 flex items-center justify-center {{ request()->routeIs('dashboard') ? 'text-[#114E84]' : 'text-white/80' }}">
+                                            @include('partials.icon', ['name' => 'home', 'class' => 'w-[18px] h-[18px]'])
                                         </div>
-                                        <span>Analitik DW</span>
+                                        <span>Dashboard</span>
                                     </div>
-                                    <span class="text-[#114E84] text-xs">▸</span>
-                                </a>
-                            </div>
-                        @else
-                            <div class="px-3">
-                                <a href="{{ route('analitik') }}"
-                                   class="flex items-center justify-between gap-3 py-2 px-3 rounded-xl text-white/90 hover:bg-white/10 hover:text-white transition">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-6 h-6 flex items-center justify-center text-white/80">
-                                            @include('partials.icon', ['name' => 'chart', 'class' => 'w-[18px] h-[18px]'])
-                                        </div>
-                                        <span>Analitik DW</span>
-                                    </div>
-                                    <span class="text-white/40 text-xs">▸</span>
+                                    <span class="{{ request()->routeIs('dashboard') ? 'text-[#114E84]' : 'text-white/40' }} text-xs">▸</span>
                                 </a>
                             </div>
                         @endif
-                    @endif
-                </div>
-            </div>
 
-            {{-- Modul Operasional --}}
-            <div class="pt-1">
-                <p class="px-5 mb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">Operasional</p>
-                <div class="space-y-0.5 px-3">
-                    @foreach ($operationalGroups as $group)
-                        @if ($canAccess($group['perm']))
+                        {{-- Submodul Sistem Tiket --}}
+                        @if ($canAccessTiket)
+                            <div class="px-3">
+                                <a href="{{ route('tiket.index') }}"
+                                   class="flex items-center justify-between gap-3 py-2 px-3 rounded-xl transition {{ request()->routeIs('tiket.*') ? 'bg-canvas text-[#114E84] font-bold shadow-2xs' : 'text-white/90 hover:bg-white/10 hover:text-white' }}">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-6 h-6 flex items-center justify-center {{ request()->routeIs('tiket.*') ? 'text-[#114E84]' : 'text-white/80' }}">
+                                            @include('partials.icon', ['name' => 'inbox', 'class' => 'w-[18px] h-[18px]'])
+                                        </div>
+                                        <span>Sistem Tiket</span>
+                                    </div>
+                                    <span class="{{ request()->routeIs('tiket.*') ? 'text-[#114E84]' : 'text-white/40' }} text-xs">▸</span>
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @endif
+
+            {{-- Modul Operasional (Hanya tampil jika role memiliki hak akses) --}}
+            @if ($visibleOperationalGroups->isNotEmpty())
+                <div class="pt-1">
+                    <p class="px-5 mb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">Operasional</p>
+                    <div class="space-y-0.5 px-3">
+                        @foreach ($visibleOperationalGroups as $group)
                             @php
                                 $groupActive = collect($group['children'])->contains(fn ($child) => request()->route('key') === $child['key']);
                             @endphp
@@ -197,10 +178,10 @@
                                     @endforeach
                                 </div>
                             </details>
-                        @endif
-                    @endforeach
+                        @endforeach
+                    </div>
                 </div>
-            </div>
+            @endif
 
             {{-- Referensi & Panduan --}}
             @if ($visibleReferences->isNotEmpty())
@@ -223,41 +204,47 @@
                 </div>
             @endif
 
-            {{-- Administrasi (Superadmin Only) --}}
-            @if ($user?->role?->nama === 'superadmin')
+            {{-- Administrasi --}}
+            @if ($canAccess('user_mgmt') || $canAccess('role_mgmt') || $canAccess('audit_log'))
                 <div class="pt-1">
                     <p class="px-5 mb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">Administrasi</p>
                     <div class="space-y-0.5 px-3">
-                        <a href="{{ route('admin.users.index') }}"
-                           class="flex items-center justify-between gap-3 py-2 px-3 rounded-xl transition {{ request()->routeIs('admin.users.*') ? 'bg-canvas text-[#114E84] font-bold shadow-2xs' : 'text-white/90 hover:bg-white/10 hover:text-white' }}">
-                            <div class="flex items-center gap-3">
-                                <div class="w-6 h-6 flex items-center justify-center {{ request()->routeIs('admin.users.*') ? 'text-[#114E84]' : 'text-white/80' }}">
-                                    @include('partials.icon', ['name' => 'users', 'class' => 'w-[17px] h-[17px]'])
+                        @if ($canAccess('user_mgmt'))
+                            <a href="{{ route('admin.users.index') }}"
+                               class="flex items-center justify-between gap-3 py-2 px-3 rounded-xl transition {{ request()->routeIs('admin.users.*') ? 'bg-canvas text-[#114E84] font-bold shadow-2xs' : 'text-white/90 hover:bg-white/10 hover:text-white' }}">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-6 h-6 flex items-center justify-center {{ request()->routeIs('admin.users.*') ? 'text-[#114E84]' : 'text-white/80' }}">
+                                        @include('partials.icon', ['name' => 'users', 'class' => 'w-[17px] h-[17px]'])
+                                    </div>
+                                    <span class="text-[12.5px]">User</span>
                                 </div>
-                                <span class="text-[12.5px]">User</span>
-                            </div>
-                            <span class="text-white/40 text-xs">▸</span>
-                        </a>
-                        <a href="{{ route('admin.roles.index') }}"
-                           class="flex items-center justify-between gap-3 py-2 px-3 rounded-xl transition {{ request()->routeIs('admin.roles.*') ? 'bg-canvas text-[#114E84] font-bold shadow-2xs' : 'text-white/90 hover:bg-white/10 hover:text-white' }}">
-                            <div class="flex items-center gap-3">
-                                <div class="w-6 h-6 flex items-center justify-center {{ request()->routeIs('admin.roles.*') ? 'text-[#114E84]' : 'text-white/80' }}">
-                                    @include('partials.icon', ['name' => 'shield', 'class' => 'w-[17px] h-[17px]'])
+                                <span class="text-white/40 text-xs">▸</span>
+                            </a>
+                        @endif
+                        @if ($canAccess('role_mgmt'))
+                            <a href="{{ route('admin.roles.index') }}"
+                               class="flex items-center justify-between gap-3 py-2 px-3 rounded-xl transition {{ request()->routeIs('admin.roles.*') ? 'bg-canvas text-[#114E84] font-bold shadow-2xs' : 'text-white/90 hover:bg-white/10 hover:text-white' }}">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-6 h-6 flex items-center justify-center {{ request()->routeIs('admin.roles.*') ? 'text-[#114E84]' : 'text-white/80' }}">
+                                        @include('partials.icon', ['name' => 'shield', 'class' => 'w-[17px] h-[17px]'])
+                                    </div>
+                                    <span class="text-[12.5px]">Role</span>
                                 </div>
-                                <span class="text-[12.5px]">Role</span>
-                            </div>
-                            <span class="text-white/40 text-xs">▸</span>
-                        </a>
-                        <a href="{{ route('admin.audit-log.index') }}"
-                           class="flex items-center justify-between gap-3 py-2 px-3 rounded-xl transition {{ request()->routeIs('admin.audit-log.*') ? 'bg-canvas text-[#114E84] font-bold shadow-2xs' : 'text-white/90 hover:bg-white/10 hover:text-white' }}">
-                            <div class="flex items-center gap-3">
-                                <div class="w-6 h-6 flex items-center justify-center {{ request()->routeIs('admin.audit-log.*') ? 'text-[#114E84]' : 'text-white/80' }}">
-                                    @include('partials.icon', ['name' => 'lock', 'class' => 'w-[17px] h-[17px]'])
+                                <span class="text-white/40 text-xs">▸</span>
+                            </a>
+                        @endif
+                        @if ($canAccess('audit_log'))
+                            <a href="{{ route('admin.audit-log.index') }}"
+                               class="flex items-center justify-between gap-3 py-2 px-3 rounded-xl transition {{ request()->routeIs('admin.audit-log.*') ? 'bg-canvas text-[#114E84] font-bold shadow-2xs' : 'text-white/90 hover:bg-white/10 hover:text-white' }}">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-6 h-6 flex items-center justify-center {{ request()->routeIs('admin.audit-log.*') ? 'text-[#114E84]' : 'text-white/80' }}">
+                                        @include('partials.icon', ['name' => 'lock', 'class' => 'w-[17px] h-[17px]'])
+                                    </div>
+                                    <span class="text-[12.5px]">Audit Log</span>
                                 </div>
-                                <span class="text-[12.5px]">Audit Log</span>
-                            </div>
-                            <span class="text-white/40 text-xs">▸</span>
-                        </a>
+                                <span class="text-white/40 text-xs">▸</span>
+                            </a>
+                        @endif
                     </div>
                 </div>
             @endif
@@ -321,30 +308,79 @@
             </button>
         </div>
         <nav class="flex-1 p-3 space-y-3 text-xs">
-            <a href="{{ route('dashboard') }}" class="flex items-center gap-3 p-2 rounded-xl {{ request()->routeIs('dashboard') ? 'bg-white/20 text-white font-bold' : 'text-white/80' }}">
-                @include('partials.icon', ['name' => 'home', 'class' => 'w-4 h-4'])
-                <span>Dashboard</span>
-            </a>
-            @if ($canAccess('analytics_dw'))
-                <a href="{{ route('analitik') }}" class="flex items-center gap-3 p-2 rounded-xl {{ request()->routeIs('analitik*') ? 'bg-white/20 text-white font-bold' : 'text-white/80' }}">
-                    @include('partials.icon', ['name' => 'chart', 'class' => 'w-4 h-4'])
-                    <span>Analitik DW</span>
-                </a>
-            @endif
-            @foreach ($operationalGroups as $group)
-                @if ($canAccess($group['perm']))
-                    <div class="pt-1">
-                        <p class="text-[10px] font-bold text-white/50 uppercase px-2 mb-1">{{ $group['label'] }}</p>
-                        <div class="space-y-0.5 pl-2">
-                            @foreach ($group['children'] as $child)
-                                <a href="{{ route('modul.index', $child['key']) }}" class="block px-2 py-1.5 rounded-lg text-white/80 hover:text-white {{ request()->route('key') === $child['key'] ? 'text-white font-bold bg-white/20' : '' }}">
-                                    • {{ $child['label'] }}
-                                </a>
-                            @endforeach
-                        </div>
+            {{-- Pengajuan & Monitoring --}}
+            @if ($hasPengajuanMonitoring)
+                <div>
+                    <p class="text-[10px] font-bold text-white/50 uppercase px-2 mb-1">Pengajuan &amp; Monitoring</p>
+                    <div class="space-y-1">
+                        @if ($canAccessDashboard)
+                            <a href="{{ route('dashboard') }}" class="flex items-center gap-3 p-2 rounded-xl {{ request()->routeIs('dashboard') ? 'bg-white/20 text-white font-bold' : 'text-white/80' }}">
+                                @include('partials.icon', ['name' => 'home', 'class' => 'w-4 h-4'])
+                                <span>Dashboard</span>
+                            </a>
+                        @endif
+                        @if ($canAccessTiket)
+                            <a href="{{ route('tiket.index') }}" class="flex items-center gap-3 p-2 rounded-xl {{ request()->routeIs('tiket.*') ? 'bg-white/20 text-white font-bold' : 'text-white/80' }}">
+                                @include('partials.icon', ['name' => 'inbox', 'class' => 'w-4 h-4'])
+                                <span>Sistem Tiket</span>
+                            </a>
+                        @endif
                     </div>
-                @endif
-            @endforeach
+                </div>
+            @endif
+
+            {{-- Modul Operasional (Hanya tampil jika ada akses) --}}
+            @if ($visibleOperationalGroups->isNotEmpty())
+                <div class="pt-1">
+                    <p class="text-[10px] font-bold text-white/50 uppercase px-2 mb-1">Operasional</p>
+                    <div class="space-y-2">
+                        @foreach ($visibleOperationalGroups as $group)
+                            <div>
+                                <p class="text-[10.5px] font-semibold text-white/70 px-2">{{ $group['label'] }}</p>
+                                <div class="space-y-0.5 pl-2">
+                                    @foreach ($group['children'] as $child)
+                                        <a href="{{ route('modul.index', $child['key']) }}" class="block px-2 py-1.5 rounded-lg text-white/80 hover:text-white {{ request()->route('key') === $child['key'] ? 'text-white font-bold bg-white/20' : '' }}">
+                                            • {{ $child['label'] }}
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Referensi --}}
+            @if ($visibleReferences->isNotEmpty())
+                <div class="pt-1">
+                    <p class="text-[10px] font-bold text-white/50 uppercase px-2 mb-1">Referensi</p>
+                    <div class="space-y-0.5 pl-2">
+                        @foreach ($visibleReferences as $item)
+                            <a href="{{ isset($item['parameter']) ? route($item['route'], $item['parameter']) : route($item['route']) }}" class="block px-2 py-1.5 rounded-lg text-white/80 hover:text-white {{ $item['active'] ? 'text-white font-bold bg-white/20' : '' }}">
+                                • {{ $item['label'] }}
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Administrasi --}}
+            @if ($canAccess('user_mgmt') || $canAccess('role_mgmt') || $canAccess('audit_log'))
+                <div class="pt-1">
+                    <p class="text-[10px] font-bold text-white/50 uppercase px-2 mb-1">Administrasi</p>
+                    <div class="space-y-0.5 pl-2">
+                        @if ($canAccess('user_mgmt'))
+                            <a href="{{ route('admin.users.index') }}" class="block px-2 py-1.5 rounded-lg text-white/80 hover:text-white {{ request()->routeIs('admin.users.*') ? 'text-white font-bold bg-white/20' : '' }}">• User</a>
+                        @endif
+                        @if ($canAccess('role_mgmt'))
+                            <a href="{{ route('admin.roles.index') }}" class="block px-2 py-1.5 rounded-lg text-white/80 hover:text-white {{ request()->routeIs('admin.roles.*') ? 'text-white font-bold bg-white/20' : '' }}">• Role</a>
+                        @endif
+                        @if ($canAccess('audit_log'))
+                            <a href="{{ route('admin.audit-log.index') }}" class="block px-2 py-1.5 rounded-lg text-white/80 hover:text-white {{ request()->routeIs('admin.audit-log.*') ? 'text-white font-bold bg-white/20' : '' }}">• Audit Log</a>
+                        @endif
+                    </div>
+                </div>
+            @endif
         </nav>
         <div class="p-3 border-t border-white/10 flex items-center justify-between bg-black/10">
             <div class="min-w-0">
