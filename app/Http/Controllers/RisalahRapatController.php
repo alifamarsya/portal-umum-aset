@@ -30,33 +30,13 @@ class RisalahRapatController extends Controller
         $user = auth()->user();
 
         if ($mode === 'read') {
-            if (in_array($user?->role?->nama, ['superadmin', 'pimpinan'])) {
-                return;
-            }
-
-            $perm = \App\Models\RolePermission::where('role_id', $user?->role_id)
-                ->where('perm_key', 'risalah')
-                ->first();
-
-            abort_if(!$perm, 403, "Role Anda tidak memiliki akses ke Risalah Rapat.");
+            abort_unless($user && $user->canAccessModule('risalah'), 403, "Role Anda tidak memiliki akses ke Risalah Rapat.");
             return;
         }
 
         // Mode write (Maker)
-        if ($user?->role?->nama === 'superadmin') {
-            abort(403, "Administrator hanya memiliki hak akses lihat pada Risalah Rapat.");
-        }
-
-        if ($user?->role?->nama === 'pimpinan') {
-            abort(403, "Pimpinan Divisi hanya memiliki hak akses lihat pada Risalah Rapat.");
-        }
-
-        $perm = \App\Models\RolePermission::where('role_id', $user?->role_id)
-            ->where('perm_key', 'risalah')
-            ->first();
-
-        abort_if(!$perm, 403, "Role Anda tidak memiliki akses ke Risalah Rapat.");
-        abort_if(!$perm->can_write, 403, "Role Anda tidak memiliki izin untuk menambah atau mengubah Risalah Rapat.");
+        abort_unless($user && $user->canAccessModule('risalah'), 403, "Role Anda tidak memiliki akses ke Risalah Rapat.");
+        abort_unless($user && $user->canWriteModule('risalah'), 403, "Role Anda tidak memiliki izin untuk menambah atau mengubah Risalah Rapat.");
     }
 
     public function index()
