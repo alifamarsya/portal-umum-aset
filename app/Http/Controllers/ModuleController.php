@@ -30,39 +30,19 @@ class ModuleController extends Controller
 
         // 1. Mode Checker (Approve / Reject)
         if ($mode === 'checker') {
-            abort_unless($user && $user->role?->nama === 'pimpinan', 403, 'Hanya Pimpinan Divisi (Checker) yang dapat menyetujui atau menolak transaksi.');
+            abort_unless($user && $user->isChecker(), 403, 'Hanya Pimpinan Divisi (Checker) yang dapat menyetujui atau menolak transaksi.');
             return $cfg;
         }
 
         // 2. Mode Read (Melihat data modul)
         if ($mode === 'read') {
-            if (in_array($user?->role?->nama, ['superadmin', 'pimpinan'])) {
-                return $cfg;
-            }
-
-            $perm = \App\Models\RolePermission::where('role_id', $user?->role_id)
-                ->where('perm_key', $cfg['perm'])
-                ->first();
-
-            abort_if(!$perm, 403, "Role Anda tidak memiliki akses ke modul {$cfg['modul']}.");
+            abort_unless($user && $user->canAccessModule($cfg['perm']), 403, "Role Anda tidak memiliki akses ke modul {$cfg['modul']}.");
             return $cfg;
         }
 
         // 3. Mode Write (Maker: Tambah, Ubah, Hapus data)
-        if ($user?->role?->nama === 'superadmin') {
-            abort(403, "Administrator hanya memiliki hak akses lihat, tidak dapat menambah atau mengubah data transaksi.");
-        }
-
-        if ($user?->role?->nama === 'pimpinan') {
-            abort(403, "Pimpinan Divisi hanya bertindak sebagai Checker, tidak dapat menambah atau mengubah data transaksi.");
-        }
-
-        $perm = \App\Models\RolePermission::where('role_id', $user?->role_id)
-            ->where('perm_key', $cfg['perm'])
-            ->first();
-
-        abort_if(!$perm, 403, "Role Anda tidak memiliki akses ke modul {$cfg['modul']}.");
-        abort_if(!$perm->can_write, 403, "Role Anda hanya bisa melihat modul {$cfg['modul']}, tidak bisa menambah atau mengubah data.");
+        abort_unless($user && $user->canAccessModule($cfg['perm']), 403, "Role Anda tidak memiliki akses ke modul {$cfg['modul']}.");
+        abort_unless($user && $user->canWriteModule($cfg['perm']), 403, "Role Anda hanya bisa melihat modul {$cfg['modul']}, tidak bisa menambah atau mengubah data.");
 
         return $cfg;
     }
