@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             TicketCategorySeeder::class,
             UserSeeder::class,
             RefAkunSeeder::class,
+            DummyDataSeeder::class, // Data operasional dummy + ETL Data Warehouse
         ]);
     }
 }

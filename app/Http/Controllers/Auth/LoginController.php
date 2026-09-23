@@ -16,7 +16,7 @@ class LoginController extends Controller
 
     public function show()
     {
-        return view('auth.login');
+        return view('auth.login', ['showForceChangeModal' => false]);
     }
 
     public function login(Request $request)
@@ -52,7 +52,8 @@ class LoginController extends Controller
 
     public function forceChangeForm()
     {
-        return view('auth.force-change');
+        // Render halaman login dengan modal force-change di atasnya
+        return view('auth.login', ['showForceChangeModal' => true]);
     }
 
     public function forceChange(Request $request)

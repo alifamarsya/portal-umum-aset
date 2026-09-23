@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id" class="h-full">
+@php $showForceChangeModal = $showForceChangeModal ?? false; @endphp
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -286,5 +287,128 @@
             });
         }
     </script>
+
+    {{-- ================= FORCE CHANGE PASSWORD MODAL ================= --}}
+    @if($showForceChangeModal)
+    <div id="forceChangeModal"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style="background: rgba(4, 23, 49, 0.75); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+
+        <div class="w-full max-w-[400px] bg-white rounded-[28px] shadow-2xl p-8 relative animate-modal-in" style="animation: modalIn 0.28s cubic-bezier(.22,1,.36,1)">
+
+            {{-- Header Modal --}}
+            <div class="flex items-center gap-3 mb-5">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background: linear-gradient(135deg, #1D6FB8 0%, #0F487F 100%)">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-base font-bold text-slate-900 leading-tight">Ganti password Anda</h2>
+                    <p class="text-xs text-slate-500 leading-snug mt-0.5">Ini login pertama Anda &mdash; buat password baru sebelum melanjutkan.</p>
+                </div>
+            </div>
+
+            {{-- Error Alert --}}
+            @if ($errors->any())
+                <div class="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2">
+                    <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>{{ $errors->first() }}</span>
+                </div>
+            @endif
+
+            {{-- Form --}}
+            <form method="POST" action="{{ route('password.force-change.submit') }}" class="space-y-4" id="forceChangeForm">
+                @csrf
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1.5" for="fc_password">Password Baru</label>
+                    <div class="relative">
+                        <input id="fc_password"
+                               type="password"
+                               name="password"
+                               required
+                               minlength="8"
+                               placeholder="Minimal 8 karakter"
+                               class="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:border-transparent transition shadow-sm" style="focus-ring-color: #1D6FB8;">
+                        <button type="button" onclick="toggleFcPwd('fc_password','fcEye1','fcEyeClosed1')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition">
+                            <svg id="fcEye1" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            <svg id="fcEyeClosed1" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1.5" for="fc_password_confirmation">Konfirmasi Password</label>
+                    <div class="relative">
+                        <input id="fc_password_confirmation"
+                               type="password"
+                               name="password_confirmation"
+                               required
+                               minlength="8"
+                               placeholder="Ulangi password baru"
+                               class="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:border-transparent transition shadow-sm">
+                        <button type="button" onclick="toggleFcPwd('fc_password_confirmation','fcEye2','fcEyeClosed2')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition">
+                            <svg id="fcEye2" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            <svg id="fcEyeClosed2" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit"
+                        id="fcSubmitBtn"
+                        class="w-full mt-2 py-3 px-4 rounded-xl text-white font-bold text-sm tracking-wide flex items-center justify-center gap-2 transition"
+                        style="background: linear-gradient(135deg, #1D6FB8 0%, #0F487F 100%); box-shadow: 0 8px 20px -4px rgba(29, 111, 184, 0.45);">
+                    <span>Simpan &amp; Lanjutkan</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                    </svg>
+                </button>
+            </form>
+
+            {{-- Divider + Logout --}}
+            <div class="mt-4 pt-4 border-t border-slate-100 text-center">
+                <form method="POST" action="{{ route('logout') }}" class="inline">
+                    @csrf
+                    <button type="submit" class="text-xs text-slate-500 hover:text-slate-700 transition underline underline-offset-2">
+                        Batalkan &amp; Keluar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.94) translateY(12px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+    </style>
+    <script>
+        function toggleFcPwd(inputId, eyeOpenId, eyeClosedId) {
+            var input = document.getElementById(inputId);
+            var eyeOpen = document.getElementById(eyeOpenId);
+            var eyeClosed = document.getElementById(eyeClosedId);
+            if (!input) return;
+            var isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            if (eyeOpen) eyeOpen.classList.toggle('hidden', isPassword);
+            if (eyeClosed) eyeClosed.classList.toggle('hidden', !isPassword);
+        }
+        // Submit loading state
+        var fcForm = document.getElementById('forceChangeForm');
+        var fcBtn = document.getElementById('fcSubmitBtn');
+        if (fcForm && fcBtn) {
+            fcForm.addEventListener('submit', function() {
+                fcBtn.disabled = true;
+                fcBtn.style.opacity = '0.8';
+                fcBtn.innerHTML = '<svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Menyimpan...</span>';
+            });
+        }
+    </script>
+    @endif
+
 </body>
 </html>
