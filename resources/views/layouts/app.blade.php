@@ -39,7 +39,10 @@
             'children' => [
                 ['key' => 'kendaraan', 'label' => 'Kendaraan & Driver'],
                 ['key' => 'biaya_harian', 'label' => 'Biaya BBM & Perawatan RT'],
-                ['key' => 'permintaan_cabang', 'label' => 'Permintaan Cabang (ATK/Inv)'],
+                ['key' => 'fasilitas_kantor', 'label' => 'Master Fasilitas Kantor'],
+                ['key' => 'pemeliharaan_gedung', 'label' => 'Pemeliharaan Gedung & Utilitas'],
+                ['key' => 'checklist_kebersihan', 'label' => 'Checklist Kebersihan & K3'],
+                ['key' => 'k3_insiden', 'label' => 'Catatan Insiden K3'],
             ],
         ],
         [
@@ -47,8 +50,15 @@
             'label' => 'Aset & Logistik',
             'icon' => 'layers',
             'children' => [
-                ['key' => 'invoice_sewa', 'label' => 'Invoice Sewa'],
                 ['key' => 'aset', 'label' => 'Data Aset & Inventaris'],
+                ['key' => 'aset_history', 'label' => 'Riwayat Pergerakan Aset'],
+                ['key' => 'mutasi_aset', 'label' => 'Mutasi Aset'],
+                ['key' => 'disposal_aset', 'label' => 'Penghapusan Aset (Disposal)'],
+                ['key' => 'rekonsiliasi_aset', 'label' => 'Rekonsiliasi & Reklasifikasi'],
+                ['key' => 'penerimaan_barang', 'label' => 'Penerimaan Barang / Jasa'],
+                ['key' => 'distribusi_barang', 'label' => 'Distribusi Barang / Jasa'],
+                ['key' => 'pembayaran_tagihan', 'label' => 'Pembayaran Tagihan Logistik'],
+                ['key' => 'invoice_sewa', 'label' => 'Invoice Sewa'],
                 ['key' => 'amortisasi', 'label' => 'Amortisasi Aset'],
                 ['key' => 'pks', 'label' => 'PKS & Jatuh Tempo'],
                 ['key' => 'memo_sewa_cabang', 'label' => 'Memo Sewa Cabang'],
@@ -60,19 +70,26 @@
             'label' => 'Pengadaan & Pemeliharaan',
             'icon' => 'cart',
             'children' => [
+                ['key' => 'perencanaan_kebutuhan', 'label' => 'Perencanaan Kebutuhan'],
                 ['key' => 'memo_internal', 'label' => 'Memo Internal'],
                 ['key' => 'penawaran', 'label' => 'Penawaran Vendor'],
                 ['key' => 'negosiasi', 'label' => 'Negosiasi Harga'],
                 ['key' => 'draft_dokumen', 'label' => 'Draft Dokumen SPK'],
                 ['key' => 'spk', 'label' => 'Surat Perintah Kerja (SPK)'],
+                ['key' => 'jadwal_pemeliharaan', 'label' => 'Jadwal Pemeliharaan Rutin'],
+                ['key' => 'monitoring_kondisi', 'label' => 'Monitoring Kondisi Fisik'],
+                ['key' => 'pengawasan_penggunaan', 'label' => 'Pengawasan Penggunaan'],
+                ['key' => 'tindak_lanjut_perbaikan', 'label' => 'Tindak Lanjut Perbaikan'],
                 ['key' => 'reminder', 'label' => 'Reminder & Monitoring'],
             ],
         ],
         [
             'perm' => 'risalah',
-            'label' => 'Arsip Surat & Memo',
+            'label' => 'Dokumen & Kearsipan',
             'icon' => 'archive',
             'children' => [
+                ['key' => 'arsip_dokumen', 'label' => 'Master Arsip Dokumen'],
+                ['key' => 'dokumen_legalitas', 'label' => 'Dokumen Legalitas'],
                 ['key' => 'surat_masuk', 'label' => 'Surat Masuk'],
                 ['key' => 'surat_keluar', 'label' => 'Surat Keluar'],
                 ['key' => 'memo_masuk', 'label' => 'Memo Masuk'],
@@ -85,7 +102,6 @@
 
     $referenceItems = [
         ['perm' => 'risalah', 'label' => 'Risalah Rapat', 'route' => 'risalah.index', 'active' => request()->routeIs('risalah.*'), 'icon' => 'file-text'],
-        ['perm' => 'panduan', 'label' => 'Buku Panduan', 'route' => 'panduan.index', 'active' => request()->routeIs('panduan.*'), 'icon' => 'book'],
         ['perm' => 'ref_akun', 'label' => 'Referensi Akun (COA)', 'route' => 'modul.index', 'parameter' => 'ref_akun', 'active' => request()->route('key') === 'ref_akun', 'icon' => 'sliders'],
     ];
     $visibleReferences = collect($referenceItems)->filter(fn ($item) => $canAccess($item['perm']));
@@ -290,9 +306,26 @@
         </div>
     </div>
     <div class="flex items-center gap-2">
-        <div class="w-8 h-8 rounded-lg bg-white/20 text-white font-bold flex items-center justify-center text-xs">
+        {{-- Mobile Notification Bell --}}
+        <button id="mobileNotifBtn"
+                type="button"
+                aria-label="Notifikasi"
+                class="relative flex items-center justify-center w-8 h-8 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition"
+                onclick="toggleMobileNotifSheet()">
+            <svg class="w-4.5 h-4.5" style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+        </button>
+        {{-- Mobile Profile Button --}}
+        <button id="mobileProfileBtn"
+                type="button"
+                aria-label="Profil"
+                class="w-8 h-8 rounded-lg text-white font-bold flex items-center justify-center text-xs hover:bg-white/30 transition"
+                style="background: rgba(255,255,255,0.2);"
+                onclick="toggleMobileProfileSheet()">
             {{ strtoupper(substr($user->nama_lengkap, 0, 1)) }}
-        </div>
+        </button>
     </div>
 </div>
 
@@ -412,20 +445,18 @@
 
         {{-- Right Controls --}}
         <div class="flex items-center gap-2 flex-shrink-0">
-            <div class="relative hidden lg:flex items-center" style="width:220px;">
-                <span class="absolute left-2.5 text-slate-400 pointer-events-none">
-                    @include('partials.icon', ['name' => 'search', 'class' => 'w-3.5 h-3.5'])
-                </span>
-                <input type="text"
-                       placeholder="Cari aset, memo, PKS..."
-                       class="w-full bg-slate-100 text-xs rounded-lg pl-8 pr-3 py-1.5 border border-slate-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 text-slate-700 placeholder-slate-400 outline-none transition">
-            </div>
-
+            {{-- Widget Tanggal --}}
             <div class="hidden sm:flex items-center gap-1.5 text-xs text-slate-500 font-medium px-2 py-1.5 bg-white border border-slate-200 rounded-lg">
                 @include('partials.icon', ['name' => 'calendar', 'class' => 'w-3.5 h-3.5 text-slate-400'])
                 <span class="hidden md:inline">{{ now()->translatedFormat('d M Y') }}</span>
                 <span class="md:hidden">{{ now()->format('d/m') }}</span>
             </div>
+
+            {{-- Notifikasi Lonceng --}}
+            @include('partials.notification-dropdown')
+
+            {{-- Profil Dropdown --}}
+            @include('partials.profile-dropdown')
         </div>
     </header>
 
@@ -460,7 +491,92 @@
     </main>
 </div>
 
+{{-- ===== Mobile Notification Sheet ===== --}}
+<div id="mobileNotifSheet"
+     class="lg:hidden fixed inset-0 z-[60] bg-black/50 backdrop-blur-xs hidden"
+     onclick="if(event.target===this)closeMobileNotifSheet()">
+    <div class="fixed bottom-0 inset-x-0 bg-white rounded-t-2xl shadow-2xl p-5 pb-8" style="max-height: 60vh; overflow-y:auto;">
+        <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4"></div>
+        <div class="flex items-center gap-2 mb-4">
+            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            <span class="font-semibold text-slate-800">Notifikasi</span>
+        </div>
+        <div class="flex flex-col items-center py-8 text-center">
+            <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
+                <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+            </div>
+            <p class="text-sm font-medium text-slate-600">Belum ada notifikasi</p>
+            <p class="text-xs text-slate-400 mt-1">Notifikasi baru akan muncul di sini</p>
+        </div>
+    </div>
+</div>
+
+{{-- ===== Mobile Profile Sheet ===== --}}
+<div id="mobileProfileSheet"
+     class="lg:hidden fixed inset-0 z-[60] bg-black/50 backdrop-blur-xs hidden"
+     onclick="if(event.target===this)closeMobileProfileSheet()">
+    <div class="fixed bottom-0 inset-x-0 bg-white rounded-t-2xl shadow-2xl pb-8">
+        <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mt-4 mb-0"></div>
+        {{-- User Info --}}
+        <div class="px-5 py-4 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                     style="background: linear-gradient(135deg, #1D6FB8 0%, #0F487F 100%);">
+                    {{ strtoupper(substr($user->nama_lengkap, 0, 2)) }}
+                </div>
+                <div class="min-w-0">
+                    <p class="text-sm font-bold text-slate-900 truncate">{{ $user->nama_lengkap }}</p>
+                    <p class="text-xs text-slate-500 truncate">{{ $user->username }}</p>
+                    <span class="inline-flex items-center mt-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold text-white" style="background:#1D6FB8;">
+                        {{ $user->role?->label }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        {{-- Menu --}}
+        <div class="px-3 py-2 space-y-0.5">
+            <a href="{{ route('profile.show') }}"
+               class="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-50 transition text-slate-700">
+                <span class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                </span>
+                <span class="font-medium text-sm">Data Pribadi</span>
+            </a>
+            <a href="{{ route('profile.change-password') }}"
+               class="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-50 transition text-slate-700">
+                <span class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                    </svg>
+                </span>
+                <span class="font-medium text-sm">Ubah Password</span>
+            </a>
+            <form method="POST" action="{{ route('logout') }}" class="px-0">
+                @csrf
+                <button type="submit"
+                        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-red-50 transition text-red-600">
+                    <span class="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                        </svg>
+                    </span>
+                    <span class="font-medium text-sm">Keluar</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
+    // ── Mobile Sidebar Drawer ────────────────────────────────────────────────
     const mobileMenuBtn = document.getElementById('mobileMenuBtn');
     const mobileDrawer = document.getElementById('mobileDrawer');
     const closeMobileDrawer = document.getElementById('closeMobileDrawer');
@@ -472,7 +588,56 @@
             if (e.target === mobileDrawer) mobileDrawer.classList.add('hidden');
         });
     }
+
+    // ── Shared Dropdown Utils ────────────────────────────────────────────────
+    function closeAllDropdowns() {
+        var ids = ['notifDropdown', 'profileDropdown'];
+        ids.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        });
+        var chevron = document.getElementById('profileChevron');
+        if (chevron) chevron.style.transform = '';
+    }
+
+    // Click-outside to close dropdowns
+    document.addEventListener('click', function(e) {
+        var notifWrapper = document.getElementById('notifDropdownWrapper');
+        var profileWrapper = document.getElementById('profileDropdownWrapper');
+
+        if (notifWrapper && !notifWrapper.contains(e.target)) {
+            var nd = document.getElementById('notifDropdown');
+            if (nd) nd.classList.add('hidden');
+        }
+        if (profileWrapper && !profileWrapper.contains(e.target)) {
+            var pd = document.getElementById('profileDropdown');
+            if (pd) pd.classList.add('hidden');
+            var chevron = document.getElementById('profileChevron');
+            if (chevron) chevron.style.transform = '';
+        }
+    });
+
+    // ── Mobile Notification Sheet ────────────────────────────────────────────
+    function toggleMobileNotifSheet() {
+        var sheet = document.getElementById('mobileNotifSheet');
+        if (sheet) sheet.classList.toggle('hidden');
+    }
+    function closeMobileNotifSheet() {
+        var sheet = document.getElementById('mobileNotifSheet');
+        if (sheet) sheet.classList.add('hidden');
+    }
+
+    // ── Mobile Profile Sheet ─────────────────────────────────────────────────
+    function toggleMobileProfileSheet() {
+        var sheet = document.getElementById('mobileProfileSheet');
+        if (sheet) sheet.classList.toggle('hidden');
+    }
+    function closeMobileProfileSheet() {
+        var sheet = document.getElementById('mobileProfileSheet');
+        if (sheet) sheet.classList.add('hidden');
+    }
 </script>
 </body>
 </html>
+
 
