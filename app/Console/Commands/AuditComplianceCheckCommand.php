@@ -18,7 +18,7 @@ class AuditComplianceCheckCommand extends Command
     protected $signature = 'audit:compliance-check';
     protected $description = 'Jalankan 4 kontrol kepatuhan atas sistem: permission hantu, self-approval, approval tanpa audit log, dan integritas hash chain';
 
-    private array $permKeySistem = ['dashboard', 'tiket', 'panduan', 'user_mgmt', 'role_mgmt', 'audit_log'];
+    private array $permKeySistem = ['dashboard', 'tiket', 'user_mgmt', 'role_mgmt', 'audit_log'];
 
     private array $modelMakerChecker = [
         'UmBiayaHarian' => ['class' => UmBiayaHarian::class, 'kolom_status' => 'approval_status'],

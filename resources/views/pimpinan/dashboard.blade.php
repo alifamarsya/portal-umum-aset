@@ -14,59 +14,320 @@
     };
 @endphp
 
-{{-- Header --}}
-<div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
-    <div>
-        <h1 class="text-xl sm:text-2xl font-extrabold text-ink tracking-tight">
-            {{ $greeting }}, {{ $firstName }} 👋
-        </h1>
-        <p class="text-xs text-slate-500 mt-0.5">Monitoring Seluruh Layanan, Tiket Operasional &amp; Analitik Data Warehouse Bank Sulteng</p>
-    </div>
-    <div class="flex gap-2">
-        <a href="{{ route('tiket.index') }}"
-           class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-[#114E84] text-white hover:bg-[#0E4272] shadow-2xs transition">
-            @include('partials.icon', ['name' => 'inbox', 'class' => 'w-3.5 h-3.5'])
-            <span>Monitoring Tiket</span>
-        </a>
-        <a href="{{ route('analitik.export-csv') }}"
-           class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-2xs transition">
-            @include('partials.icon', ['name' => 'download', 'class' => 'w-3.5 h-3.5 text-slate-400'])
-            <span>Export CSV DW</span>
-        </a>
+{{-- =================== EXECUTIVE BANNER =================== --}}
+<div class="relative overflow-hidden rounded-2xl mb-6 p-6 sm:p-7 text-white shadow-lg"
+     style="background: linear-gradient(135deg, #071A2F 0%, #0C2F52 40%, #114E84 70%, #1564A8 100%);">
+    <div class="absolute -right-20 -top-20 w-80 h-80 rounded-full opacity-10"
+         style="background: radial-gradient(circle, #D4A038 0%, transparent 70%); pointer-events:none;"></div>
+    <div class="absolute left-0 top-0 w-1.5 h-full" style="background: linear-gradient(to bottom, #D4A038, transparent);"></div>
+
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+        <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mb-3"
+                 style="background:rgba(212,160,56,0.15); border:1px solid rgba(212,160,56,0.3); color:#D4A038;">
+                @include('partials.icon', ['name'=>'shield', 'class'=>'w-3.5 h-3.5'])
+                <span>Executive Dashboard • Pimpinan Divisi Umum</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
+                Selamat Datang, <span style="color:#D4A038;">{{ $user->nama_lengkap }}</span>
+            </h1>
+            <p class="text-xs sm:text-sm text-blue-100/90 mt-1 max-w-xl leading-relaxed">
+                Monitoring terpadu seluruh aktivitas tiket layanan, kepatuhan SLA, serta analitik data warehouse Bank Sulteng.
+            </p>
+            <div class="flex flex-wrap items-center gap-2 mt-3 text-xs text-blue-200/80">
+                <span class="px-2.5 py-0.5 rounded-full bg-white/10 font-medium">Periode: {{ ucfirst($periode ?? 'bulanan') }}</span>
+                <span>•</span>
+                <span>{{ now()->translatedFormat('l, d F Y') }}</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2.5 flex-shrink-0">
+            <a href="{{ route('tiket.index') }}"
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-md transition shadow-sm">
+                @include('partials.icon', ['name'=>'inbox', 'class'=>'w-4 h-4 text-amber-300'])
+                <span>Monitoring Tiket</span>
+            </a>
+            <a href="{{ route('analitik.export-csv') }}"
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-800 hover:bg-slate-100 transition shadow-sm">
+                @include('partials.icon', ['name'=>'download', 'class'=>'w-4 h-4 text-[#114E84]'])
+                <span>Export CSV DW</span>
+            </a>
+        </div>
     </div>
 </div>
 
-{{-- KPI Metrics Grid Tiket --}}
-<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-    <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-2xs">
-        <p class="text-[11px] font-medium text-slate-500">Total Tiket</p>
-        <p class="text-2xl font-bold text-ink mt-1.5">{{ $totalTiket }}</p>
-        <p class="text-[10px] text-slate-400 mt-1">Seluruh pengajuan</p>
+{{-- =================== 6 KPI STATUS TIKET =================== --}}
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+    <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-2xs">
+        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Tiket</p>
+        <p class="text-2xl sm:text-3xl font-extrabold text-ink mt-1">{{ $totalTiket }}</p>
+        <p class="text-[10px] text-slate-400 mt-1">Semua pengajuan</p>
     </div>
-    <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-2xs">
-        <p class="text-[11px] font-medium text-amber-600">Menunggu</p>
-        <p class="text-2xl font-bold text-amber-600 mt-1.5">{{ $menungguVerifikasi }}</p>
-        <p class="text-[10px] text-slate-400 mt-1">Verifikasi operator</p>
+    <div class="bg-white rounded-xl p-4 border border-amber-200 shadow-2xs">
+        <p class="text-[11px] font-bold uppercase tracking-wider text-amber-800">Menunggu</p>
+        <p class="text-2xl sm:text-3xl font-extrabold text-amber-600 mt-1">{{ $menungguVerifikasi }}</p>
+        <p class="text-[10px] text-slate-400 mt-1">Antrean operator</p>
     </div>
-    <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-2xs">
-        <p class="text-[11px] font-medium text-blue-600">Dialokasikan</p>
-        <p class="text-2xl font-bold text-blue-600 mt-1.5">{{ $dialokasikan }}</p>
+    <div class="bg-white rounded-xl p-4 border border-blue-200 shadow-2xs">
+        <p class="text-[11px] font-bold uppercase tracking-wider text-blue-800">Dialokasikan</p>
+        <p class="text-2xl sm:text-3xl font-extrabold text-blue-600 mt-1">{{ $dialokasikan }}</p>
         <p class="text-[10px] text-slate-400 mt-1">Menunggu kabag</p>
     </div>
-    <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-2xs">
-        <p class="text-[11px] font-medium text-indigo-600">Dalam Proses</p>
-        <p class="text-2xl font-bold text-indigo-600 mt-1.5">{{ $dalamProses }}</p>
+    <div class="bg-white rounded-xl p-4 border border-indigo-200 shadow-2xs">
+        <p class="text-[11px] font-bold uppercase tracking-wider text-indigo-800">Dalam Proses</p>
+        <p class="text-2xl sm:text-3xl font-extrabold text-indigo-600 mt-1">{{ $dalamProses }}</p>
         <p class="text-[10px] text-slate-400 mt-1">Dikerjakan staf</p>
     </div>
-    <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-2xs">
-        <p class="text-[11px] font-medium text-emerald-600">Selesai</p>
-        <p class="text-2xl font-bold text-emerald-600 mt-1.5">{{ $selesai }}</p>
-        <p class="text-[10px] text-slate-400 mt-1">Menunggu penutupan</p>
+    <div class="bg-white rounded-xl p-4 border border-emerald-200 shadow-2xs">
+        <p class="text-[11px] font-bold uppercase tracking-wider text-emerald-800">Selesai</p>
+        <p class="text-2xl sm:text-3xl font-extrabold text-emerald-600 mt-1">{{ $selesai }}</p>
+        <p class="text-[10px] text-slate-400 mt-1">Siap konfirmasi</p>
     </div>
-    <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-2xs">
-        <p class="text-[11px] font-medium text-slate-600">Ditutup</p>
-        <p class="text-2xl font-bold text-slate-700 mt-1.5">{{ $ditutup }}</p>
-        <p class="text-[10px] text-slate-400 mt-1">Siklus rampung</p>
+    <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-2xs">
+        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-600">Ditutup / Tolak</p>
+        <p class="text-2xl sm:text-3xl font-extrabold text-slate-700 mt-1">{{ $ditutup + $ditolak }}</p>
+        <p class="text-[10px] text-slate-400 mt-1">{{ $ditutup }} tutup &bull; {{ $ditolak }} tolak</p>
+    </div>
+</div>
+
+{{-- =================== SLA ALERT & MONITORING PER BAGIAN =================== --}}
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
+    {{-- SLA Compliance Card --}}
+    <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-xl p-5 shadow-card border border-slate-700 flex flex-col justify-between">
+        <div>
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-amber-400">Status SLA Tiket</span>
+                <span class="w-2.5 h-2.5 rounded-full {{ ($tiketOverdue ?? 0) > 0 ? 'bg-rose-500 animate-pulse' : 'bg-emerald-400' }}"></span>
+            </div>
+            <p class="text-xs text-slate-300 mb-3">Batas waktu respon awal (Tier 1) dan penyelesaian (Tier 2)</p>
+            <div class="space-y-2">
+                <div class="flex items-center justify-between text-xs bg-white/5 px-3 py-2 rounded-lg border border-white/10">
+                    <span class="text-slate-300">Overdue Penyelesaian:</span>
+                    <span class="font-bold font-mono {{ ($tiketOverdue ?? 0) > 0 ? 'text-rose-400' : 'text-emerald-400' }}">
+                        {{ $tiketOverdue ?? 0 }} Tiket
+                    </span>
+                </div>
+                <div class="flex items-center justify-between text-xs bg-white/5 px-3 py-2 rounded-lg border border-white/10">
+                    <span class="text-slate-300">Overdue Respon Awal:</span>
+                    <span class="font-bold font-mono {{ ($tiketOverdueResponse ?? 0) > 0 ? 'text-amber-400' : 'text-emerald-400' }}">
+                        {{ $tiketOverdueResponse ?? 0 }} Tiket
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[11px]">
+            <span class="text-slate-400">Pusat Persetujuan</span>
+            <span class="text-amber-300 font-semibold">100% Sistem Tiket</span>
+        </div>
+    </div>
+
+    {{-- Breakdown 3 Bagian Tujuan --}}
+    @foreach ($deptTickets ?? [] as $dept)
+        <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-2xs flex flex-col justify-between hover:border-[#114E84]/40 transition">
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-ink truncate">{{ $dept['nama'] }}</span>
+                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                        {{ $dept['total'] }} Tiket
+                    </span>
+                </div>
+                <p class="text-[11px] text-slate-400 mb-3">Penyelesaian layanan divisi</p>
+                <div class="grid grid-cols-3 gap-1.5 text-center">
+                    <div class="bg-amber-50 rounded-lg py-1.5 px-1 border border-amber-100">
+                        <p class="text-[10px] text-amber-700 font-semibold">Alokasi</p>
+                        <p class="text-sm font-bold text-amber-800">{{ $dept['menunggu'] }}</p>
+                    </div>
+                    <div class="bg-indigo-50 rounded-lg py-1.5 px-1 border border-indigo-100">
+                        <p class="text-[10px] text-indigo-700 font-semibold">Proses</p>
+                        <p class="text-sm font-bold text-indigo-800">{{ $dept['proses'] }}</p>
+                    </div>
+                    <div class="bg-emerald-50 rounded-lg py-1.5 px-1 border border-emerald-100">
+                        <p class="text-[10px] text-emerald-700 font-semibold">Selesai</p>
+                        <p class="text-sm font-bold text-emerald-800">{{ $dept['selesai'] }}</p>
+                    </div>
+                </div>
+            </div>
+            <a href="{{ route('tiket.index', ['department_id' => $dept['id']]) }}"
+               class="mt-3.5 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-[#114E84] hover:underline">
+                <span>Filter Tiket {{ $dept['slug'] }}</span>
+                @include('partials.icon', ['name' => 'chevron-right', 'class' => 'w-3.5 h-3.5'])
+            </a>
+        </div>
+    @endforeach
+</div>
+
+{{-- ========================================================================= --}}
+{{-- PUSAT MONITORING CATATAN OPERASIONAL INTERNAL SEMUA BAGIAN --}}
+{{-- ========================================================================= --}}
+<div class="mb-6 space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Catatan Internal
+                </span>
+                <span class="text-xs text-slate-400">•</span>
+                <h2 class="text-sm font-bold text-ink">Catatan Operasional Internal Bagian</h2>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">Pencatatan aktivitas kerja internal tanpa maker-checker (approval terpusat pada Sistem Tiket)</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="text-[11px] text-slate-500 bg-slate-100 px-3 py-1 rounded-full font-medium">
+                38 Modul Terdaftar
+            </span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {{-- 1. Bagian Umum & Rumah Tangga --}}
+        <div class="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden flex flex-col justify-between">
+            <div class="p-5">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-[#114E84] flex items-center justify-center flex-shrink-0">
+                        @include('partials.icon', ['name' => 'building', 'class' => 'w-5 h-5'])
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-ink text-sm">Umum &amp; Rumah Tangga</h3>
+                        <p class="text-[11px] text-slate-400">Kendaraan, fasilitas, K3 &amp; biaya harian</p>
+                    </div>
+                </div>
+
+                <div class="space-y-2.5 text-xs">
+                    <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                        <span class="text-slate-500">Kendaraan &amp; Driver</span>
+                        <span class="font-bold text-ink font-mono">{{ $operasional['umum']['kendaraan'] ?? 0 }} Unit ({{ $operasional['umum']['kendaraan_aktif'] ?? 0 }} Aktif)</span>
+                    </div>
+                    <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                        <span class="text-slate-500">Biaya Harian (Bln Ini)</span>
+                        <span class="font-bold text-ink font-mono">Rp {{ number_format($operasional['umum']['biaya_bulan_ini'] ?? 0, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                        <span class="text-slate-500">Fasilitas Kantor</span>
+                        <span class="font-bold text-ink font-mono">{{ $operasional['umum']['fasilitas_kantor'] ?? 0 }} Terdata</span>
+                    </div>
+                    <div class="flex items-center justify-between py-1">
+                        <span class="text-slate-500">Checklist Kebersihan &amp; K3</span>
+                        <span class="font-bold text-ink font-mono">{{ $operasional['umum']['kebersihan_bln'] ?? 0 }} Log ({{ $operasional['umum']['insiden_k3'] ?? 0 }} K3)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                <span class="text-slate-400">Akses Cepat:</span>
+                <div class="flex gap-2 font-medium text-[#114E84]">
+                    <a href="{{ route('modul.index', 'kendaraan') }}" class="hover:underline">Kendaraan</a>
+                    <span>•</span>
+                    <a href="{{ route('modul.index', 'biaya_harian') }}" class="hover:underline">Biaya Harian</a>
+                    <span>•</span>
+                    <a href="{{ route('modul.index', 'fasilitas_kantor') }}" class="hover:underline">Fasilitas</a>
+                </div>
+            </div>
+        </div>
+
+        {{-- 2. Bagian Aset & Logistik --}}
+        <div class="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden flex flex-col justify-between">
+            <div class="p-5">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0">
+                        @include('partials.icon', ['name' => 'layers', 'class' => 'w-5 h-5'])
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-ink text-sm">Aset &amp; Logistik</h3>
+                        <p class="text-[11px] text-slate-400">Inventaris, mutasi, disposal, PKS &amp; sewa</p>
+                    </div>
+                </div>
+
+                <div class="space-y-2.5 text-xs">
+                    <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                        <span class="text-slate-500">Total Inventaris Aset</span>
+                        <span class="font-bold text-ink font-mono">{{ $operasional['aset']['total_aset'] ?? 0 }} Item (Rp {{ number_format($operasional['aset']['nilai_perolehan'] ?? 0, 0, ',', '.') }})</span>
+                    </div>
+                    <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                        <span class="text-slate-500">Mutasi &amp; Disposal Aset</span>
+                        <span class="font-bold text-ink font-mono">{{ $operasional['aset']['mutasi'] ?? 0 }} Mutasi / {{ $operasional['aset']['disposal'] ?? 0 }} Disposal</span>
+                    </div>
+                    <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                        <span class="text-slate-500">PKS &amp; Jatuh Tempo</span>
+                        <span class="font-bold text-ink font-mono">
+                            {{ $operasional['aset']['pks_aktif'] ?? 0 }} PKS
+                            @if(($operasional['aset']['pks_near_due'] ?? 0) > 0)
+                                <span class="text-amber-600 font-semibold">({{ $operasional['aset']['pks_near_due'] }} &le;60 hr)</span>
+                            @endif
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                        <span class="text-slate-500">Penerimaan &amp; Distribusi</span>
+                        <span class="font-bold text-ink font-mono">{{ $operasional['aset']['penerimaan'] ?? 0 }} Terima / {{ $operasional['aset']['distribusi'] ?? 0 }} Salur</span>
+                    </div>
+                    <div class="flex items-center justify-between py-1">
+                        <span class="text-slate-500">Temuan Aset Terbuka</span>
+                        <span class="font-bold font-mono {{ ($operasional['aset']['temuan_terbuka'] ?? 0) > 0 ? 'text-rose-600' : 'text-emerald-600' }}">
+                            {{ $operasional['aset']['temuan_terbuka'] ?? 0 }} Kasus
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                <span class="text-slate-400">Akses Cepat:</span>
+                <div class="flex gap-2 font-medium text-[#114E84]">
+                    <a href="{{ route('modul.index', 'aset') }}" class="hover:underline">Aset</a>
+                    <span>•</span>
+                    <a href="{{ route('modul.index', 'mutasi_aset') }}" class="hover:underline">Mutasi</a>
+                    <span>•</span>
+                    <a href="{{ route('modul.index', 'pks') }}" class="hover:underline">PKS</a>
+                </div>
+            </div>
+        </div>
+
+        {{-- 3. Bagian Pengadaan & Pemeliharaan --}}
+        <div class="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden flex flex-col justify-between">
+            <div class="p-5">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                        @include('partials.icon', ['name' => 'cart', 'class' => 'w-5 h-5'])
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-ink text-sm">Pengadaan &amp; Pemeliharaan</h3>
+                        <p class="text-[11px] text-slate-400">SPK, pemeliharaan rutin, perbaikan &amp; kondisi</p>
+                    </div>
+                </div>
+
+                <div class="space-y-2.5 text-xs">
+                    <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                        <span class="text-slate-500">Surat Perintah Kerja (SPK)</span>
+                        <span class="font-bold text-ink font-mono">{{ $operasional['pengadaan']['total_spk'] ?? 0 }} Dok (Rp {{ number_format($operasional['pengadaan']['nilai_spk'] ?? 0, 0, ',', '.') }})</span>
+                    </div>
+                    <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                        <span class="text-slate-500">Perencanaan Kebutuhan</span>
+                        <span class="font-bold text-ink font-mono">{{ $operasional['pengadaan']['perencanaan'] ?? 0 }} Rencana</span>
+                    </div>
+                    <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                        <span class="text-slate-500">Jadwal Pemeliharaan Rutin</span>
+                        <span class="font-bold text-ink font-mono">{{ $operasional['pengadaan']['jadwal_pemeliharaan'] ?? 0 }} Agenda</span>
+                    </div>
+                    <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                        <span class="text-slate-500">Monitoring Kondisi Fisik</span>
+                        <span class="font-bold text-ink font-mono">{{ $operasional['pengadaan']['monitoring_kondisi'] ?? 0 }} Laporan</span>
+                    </div>
+                    <div class="flex items-center justify-between py-1">
+                        <span class="text-slate-500">Tindak Lanjut Perbaikan</span>
+                        <span class="font-bold text-ink font-mono">{{ $operasional['pengadaan']['tindak_lanjut'] ?? 0 }} Berjalan</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                <span class="text-slate-400">Akses Cepat:</span>
+                <div class="flex gap-2 font-medium text-[#114E84]">
+                    <a href="{{ route('modul.index', 'spk') }}" class="hover:underline">SPK</a>
+                    <span>•</span>
+                    <a href="{{ route('modul.index', 'perencanaan_kebutuhan') }}" class="hover:underline">Rencana</a>
+                    <span>•</span>
+                    <a href="{{ route('modul.index', 'jadwal_pemeliharaan') }}" class="hover:underline">Jadwal</a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
