@@ -2,10 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Models\InternalDepartment;
 use App\Models\Role;
 use App\Models\RolePermission;
+use App\Models\Ticket;
+use App\Models\TicketCategory;
 use App\Models\UmBiayaHarian;
 use App\Models\User;
+use Database\Seeders\InternalDepartmentSeeder;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -13,62 +18,88 @@ class RaceConditionTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_double_approve_should_fail(): void
+    protected function setUp(): void
     {
-        // 1. Buat role maker & checker
-        $roleStaff = Role::create([
-            'nama'  => 'umum_rt',
-            'label' => 'Staf Umum & Rumah Tangga',
+        parent::setUp();
+        $this->seed(InternalDepartmentSeeder::class);
+        $this->seed(RolePermissionSeeder::class);
+    }
+
+    /**
+     * Sesuai arsitektur baru:
+     * Approval di modul operasional telah dinonaktifkan (kembalikan 404).
+     */
+    public function test_operational_module_approval_is_disabled(): void
+    {
+        $pimpinan = User::factory()->create([
+            'role_id' => 2,
+            'is_active' => true,
         ]);
 
-        $rolePimpinan = Role::create([
-            'nama'  => 'pimpinan',
-            'label' => 'Pimpinan Divisi',
+        $resp = $this->actingAs($pimpinan)
+            ->post("/modul/biaya_harian/1/setujui");
+
+        $resp->assertStatus(404);
+    }
+
+    /**
+     * Approval hanya ada di Sistem Tiket:
+     * Jika tiket sudah disetujui (status berubah menjadi Dalam Proses),
+     * upaya persetujuan kedua harus ditolak (422).
+     */
+    public function test_double_approve_ticket_should_fail(): void
+    {
+        $deptUmum = InternalDepartment::where('slug', 'umum')->first();
+        $category = TicketCategory::create([
+            'department_id' => $deptUmum->id,
+            'nama'          => 'Perbaikan AC',
+            'kode'          => 'PB-AC',
+            'sla_jam'       => 24,
+            'is_active'     => true,
         ]);
 
-        RolePermission::create([
-            'role_id'   => $roleStaff->id,
-            'perm_key'  => 'umum_rt',
-            'can_write' => true,
+        $kabag = User::factory()->create([
+            'role_id'   => 10, // kabag_umum
+            'is_active' => true,
         ]);
 
-        // 2. Buat 3 user: 1 maker (staf) + 2 checker (pimpinan)
-        $maker = User::factory()->create([
-            'username' => 'adol',
-            'role_id'  => $roleStaff->id,
+        $staf = User::factory()->create([
+            'role_id'   => 13, // staf_umum
+            'is_active' => true,
         ]);
 
-        $checker1 = User::factory()->create([
-            'username' => 'pimpinan',
-            'role_id'  => $rolePimpinan->id,
+        $pemohon = User::factory()->create([
+            'role_id'   => 6, // user
+            'is_active' => true,
         ]);
 
-        $checker2 = User::factory()->create([
-            'username' => 'pimpinan2',
-            'role_id'  => $rolePimpinan->id,
+        $tiket = Ticket::create([
+            'nomor_tiket'     => 'TIK-202609-001',
+            'pemohon_id'      => $pemohon->id,
+            'department_id'   => $deptUmum->id,
+            'kategori_id'     => $category->id,
+            'judul'           => 'Permintaan perbaikan AC',
+            'deskripsi'       => 'AC di ruang meeting tidak dingin',
+            'status'          => Ticket::STATUS_DIALOKASIKAN,
+            'prioritas'       => 'tinggi',
+            'jenis_pengajuan' => 'fasilitas',
         ]);
 
-        // 3. Buat transaksi sebagai maker (status: Diajukan)
-        $transaksi = UmBiayaHarian::create([
-            'tanggal'         => now()->toDateString(),
-            'jumlah'          => 100000,
-            'kategori'        => 'BBM',
-            'uraian'          => 'Test race condition',  // field yang benar: 'uraian' bukan 'keterangan'
-            'maker_id'        => $maker->id,
-            'approval_status' => 'Diajukan',
+        // 1. Approval pertama oleh Kabag — harus BERHASIL (302 redirect back)
+        $resp1 = $this->actingAs($kabag)->post(route('tiket.setujui', $tiket), [
+            'staf_id' => $staf->id,
+            'catatan' => 'Silakan dikerjakan',
         ]);
+        $resp1->assertRedirect();
 
-        // 4. Checker1 approve duluan — harus BERHASIL
-        $resp1 = $this->actingAs($checker1)
-            ->post("/modul/biaya_harian/{$transaksi->id}/setujui");
+        $tiket->refresh();
+        $this->assertEquals(Ticket::STATUS_DALAM_PROSES, $tiket->status);
 
-        $resp1->assertRedirect(); // 302 redirect = berhasil
-
-        // 5. Checker2 coba approve transaksi yang SAMA — harus DITOLAK
-        //    karena approval_status sudah bukan 'Diajukan' lagi
-        $resp2 = $this->actingAs($checker2)
-            ->post("/modul/biaya_harian/{$transaksi->id}/setujui");
-
-        $resp2->assertStatus(403); // ApprovalPolicy menolak karena status != 'Diajukan'
+        // 2. Approval kedua untuk tiket yang SAMA — harus DITOLAK dengan status 422
+        $resp2 = $this->actingAs($kabag)->post(route('tiket.setujui', $tiket), [
+            'staf_id' => $staf->id,
+            'catatan' => 'Approval kedua oleh kabag lain/duplikat',
+        ]);
+        $resp2->assertStatus(422);
     }
 }
