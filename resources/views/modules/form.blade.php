@@ -13,17 +13,20 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             @foreach ($cfg['fields'] as $field => $meta)
                 @continue(in_array($field, ['maker_id', 'checker_id', 'approval_status', 'approved_at', 'catatan_approval', 'dibuat_oleh']))
-                @php $isWide = in_array($meta['type'] ?? '', ['textarea']); @endphp
+                @php 
+                    $isWide = in_array($meta['type'] ?? '', ['textarea']); 
+                    $isRequired = $meta['req'] ?? true;
+                @endphp
                 <div class="{{ $isWide ? 'md:col-span-2' : '' }}">
                     <label class="block text-[13px] font-medium mb-1.5 text-slate-700">
-                        {{ $meta['label'] }} @if($meta['req'] ?? false)<span class="text-red-500">*</span>@endif
+                        {{ $meta['label'] }} @if($isRequired)<span class="text-rose-500 font-bold">*</span>@endif
                     </label>
 
                     @if (($meta['type'] ?? '') === 'textarea')
-                        <textarea name="{{ $field }}" rows="3"
+                        <textarea name="{{ $field }}" rows="3" {{ $isRequired ? 'required' : '' }}
                             class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand transition">{{ old($field, $item?->$field) }}</textarea>
                     @elseif (($meta['type'] ?? '') === 'select' && !empty($meta['opts']))
-                        <select name="{{ $field }}" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm bg-white focus:border-brand focus:ring-1 focus:ring-brand transition">
+                        <select name="{{ $field }}" {{ $isRequired ? 'required' : '' }} class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm bg-white focus:border-brand focus:ring-1 focus:ring-brand transition">
                             <option value="">— pilih —</option>
                             @foreach ($meta['opts'] as $opt)
                                 <option value="{{ $opt }}" @selected(old($field, $item?->$field) === $opt)>{{ $opt }}</option>
@@ -36,18 +39,21 @@
                         </label>
                     @elseif (($meta['type'] ?? '') === 'date')
                         <input type="date" name="{{ $field }}" value="{{ old($field, optional($item?->$field)->format('Y-m-d') ?? $item?->$field) }}"
+                               {{ $isRequired ? 'required' : '' }}
                                class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand transition">
                     @elseif (in_array($meta['type'] ?? '', ['number', 'money']))
                         <input type="number" step="0.01" name="{{ $field }}" value="{{ old($field, $item?->$field) }}"
+                               {{ $isRequired ? 'required' : '' }}
                                class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm font-mono focus:border-brand focus:ring-1 focus:ring-brand transition">
-                    @elseif (($meta['type'] ?? '') === 'file')
-                        <input type="text" name="{{ $field }}" value="{{ old($field, $item?->$field) }}"
-                               placeholder="Nama file (upload asli menyusul)"
-                               class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand transition">
                     @else
                         <input type="text" name="{{ $field }}" value="{{ old($field, $item?->$field) }}"
+                               {{ $isRequired ? 'required' : '' }}
                                class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand transition">
                     @endif
+
+                    @error($field)
+                        <p class="text-[12px] text-rose-500 mt-1 font-medium">{{ $message }}</p>
+                    @enderror
 
                     @if (!empty($meta['help']))
                         <p class="text-[12px] text-slate-400 mt-1">{{ $meta['help'] }}</p>

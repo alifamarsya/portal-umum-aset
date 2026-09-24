@@ -35,9 +35,6 @@
                         @foreach ($listFields as $field => $meta)
                             <th class="px-4 py-3 font-semibold whitespace-nowrap">{{ $meta['label'] }}</th>
                         @endforeach
-                        @if ($cfg['maker_checker'])
-                            <th class="px-4 py-3 font-semibold whitespace-nowrap">Approval</th>
-                        @endif
                         <th class="px-4 py-3 font-semibold text-right">Aksi</th>
                     </tr>
                 </thead>
@@ -62,28 +59,8 @@
                                     @endif
                                 </td>
                             @endforeach
-                            @if ($cfg['maker_checker'])
-                                <td class="px-4 py-3">
-                                    <span @class([
-                                        'px-2.5 py-1 rounded-full text-xs font-medium',
-                                        'bg-amber-50 text-amber-700' => $item->approval_status === 'Diajukan',
-                                        'bg-emerald-50 text-emerald-700' => $item->approval_status === 'Disetujui',
-                                        'bg-red-50 text-red-700' => $item->approval_status === 'Ditolak',
-                                    ])>{{ $item->approval_status }}</span>
-                                </td>
-                            @endif
                             <td class="px-4 py-3 text-right whitespace-nowrap">
                                 <div class="inline-flex items-center gap-3 text-[13px]">
-                                    @if ($cfg['maker_checker'] && $item->approval_status === 'Diajukan' && $isChecker())
-                                        <form method="POST" action="{{ route('modul.approve', [$key, $item->id]) }}">
-                                            @csrf
-                                            <button class="text-emerald-700 font-medium hover:underline">Setujui</button>
-                                        </form>
-                                        <form method="POST" action="{{ route('modul.reject', [$key, $item->id]) }}">
-                                            @csrf
-                                            <button class="text-red-600 font-medium hover:underline">Tolak</button>
-                                        </form>
-                                    @endif
                                     @if ($canWrite($cfg['perm']))
                                         <a href="{{ route('modul.edit', [$key, $item->id]) }}" class="text-brand font-medium hover:underline">Ubah</a>
                                         <form method="POST" action="{{ route('modul.destroy', [$key, $item->id]) }}"
@@ -91,8 +68,7 @@
                                             @csrf @method('DELETE')
                                             <button class="text-slate-400 hover:text-red-600 transition">Hapus</button>
                                         </form>
-                                    @endif
-                                    @if (!$canWrite($cfg['perm']) && !($cfg['maker_checker'] && $item->approval_status === 'Diajukan' && $isChecker()))
+                                    @else
                                         <span class="text-slate-400 text-xs italic">Lihat Saja</span>
                                     @endif
                                 </div>
