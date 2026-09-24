@@ -24,7 +24,7 @@ class ViewRenderingTest extends TestCase
         $rolePimpinan = Role::create(['nama' => 'pimpinan', 'label' => 'Pimpinan Divisi']);
         $roleStaff = Role::create(['nama' => 'umum_rt', 'label' => 'Staf Umum & RT']);
 
-        foreach (['dashboard', 'umum_rt', 'risalah', 'panduan'] as $perm) {
+        foreach (['dashboard', 'umum_rt', 'risalah'] as $perm) {
             RolePermission::create(['role_id' => $roleAdmin->id, 'perm_key' => $perm, 'can_write' => true]);
         }
 
@@ -47,7 +47,6 @@ class ViewRenderingTest extends TestCase
         $this->actingAs($this->admin)->get('/modul/kendaraan')->assertStatus(200);
         $this->actingAs($this->admin)->get('/modul/biaya_harian')->assertStatus(200);
         $this->actingAs($this->admin)->get('/risalah')->assertStatus(200);
-        $this->actingAs($this->admin)->get('/panduan')->assertStatus(200);
         $this->actingAs($this->admin)->get('/analitik')->assertStatus(200);
     }
 
@@ -57,7 +56,6 @@ class ViewRenderingTest extends TestCase
         $this->actingAs($this->pimpinan)->get('/modul/kendaraan')->assertStatus(200);
         $this->actingAs($this->pimpinan)->get('/modul/biaya_harian')->assertStatus(200);
         $this->actingAs($this->pimpinan)->get('/risalah')->assertStatus(200);
-        $this->actingAs($this->pimpinan)->get('/panduan')->assertStatus(200);
         $this->actingAs($this->pimpinan)->get('/analitik')->assertStatus(200);
     }
 
@@ -67,6 +65,10 @@ class ViewRenderingTest extends TestCase
         $this->actingAs($this->staff)->get('/modul/kendaraan')->assertStatus(200);
         $this->actingAs($this->staff)->get('/modul/biaya_harian')->assertStatus(200);
         $this->actingAs($this->staff)->get('/risalah')->assertStatus(200);
-        $this->actingAs($this->staff)->get('/panduan')->assertStatus(200);
+    }
+
+    public function test_panduan_module_is_deleted(): void
+    {
+        $this->actingAs($this->admin)->get('/panduan')->assertStatus(404);
     }
 }

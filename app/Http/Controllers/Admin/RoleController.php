@@ -49,11 +49,6 @@ class RoleController extends Controller
             ],
         ],
         'Referensi & SOP' => [
-            'panduan' => [
-                'label' => 'Panduan Sistem (SOP)',
-                'desc' => 'Standar operasional prosedur dan panduan penggunaan aplikasi',
-                'icon' => 'book-open'
-            ],
             'ref_akun' => [
                 'label' => 'Referensi Akun & Sandi',
                 'desc' => 'Master data kode akun anggaran (COA) dan referensi transaksi',

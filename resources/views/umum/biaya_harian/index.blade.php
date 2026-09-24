@@ -43,10 +43,8 @@
                         <td class="p-3 text-slate-700">{{ $item->uraian }}</td>
                         <td class="p-3 text-right font-mono font-medium">Rp {{ number_format((float)$item->jumlah, 0, ',', '.') }}</td>
                         <td class="p-3 text-center">
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold
-                                {{ $item->approval_status === 'Disetujui' ? 'bg-emerald-50 text-emerald-700' :
-                                   ($item->approval_status === 'Ditolak'  ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700') }}">
-                                {{ $item->approval_status ?? 'Draft' }}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700">
+                                {{ $item->status ?? 'Tercatat' }}
                             </span>
                         </td>
                         <td class="p-3 text-right">

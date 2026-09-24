@@ -36,8 +36,7 @@ class GenerateLaporanBiayaBulananJob implements ShouldQueue
             'connection' => config('queue.default'),
         ]);
 
-        $query = UmBiayaHarian::whereBetween('tanggal', [$this->periodeAwal, $this->periodeAkhir])
-            ->where('approval_status', 'Disetujui');
+        $query = UmBiayaHarian::whereBetween('tanggal', [$this->periodeAwal, $this->periodeAkhir]);
 
         if ($this->kategori) {
             $query->where('kategori', $this->kategori);

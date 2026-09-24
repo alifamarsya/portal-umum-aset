@@ -80,11 +80,16 @@ protected function setUp(): void
     public function test_biaya_harian_dengan_input_valid_berhasil_tersimpan(): void
     {
         $response = $this->actingAs($this->user)->post('/modul/biaya_harian', [
-            'tanggal' => now()->toDateString(),
-            'kategori' => 'BBM',
-            'nama_beban' => 'Isi bensin dinas',
-            'jumlah' => 75000,
-            'uraian' => 'Perjalanan dinas ke cabang',
+            'tanggal'         => now()->toDateString(),
+            'kategori'        => 'BBM',
+            'kendaraan'       => 'B 1234 XYZ',
+            'nama_beban'      => 'Isi bensin dinas',
+            'rekening_debet'  => '5201.01',
+            'rekening_kredit' => '1101.01',
+            'uraian'          => 'Perjalanan dinas ke cabang',
+            'jumlah'          => 75000,
+            'no_nota'         => 'NT-002',
+            'status'          => 'Draft',
         ]);
 
         $response->assertSessionHasNoErrors();

@@ -40,13 +40,16 @@ class RolePermissionSeeder extends Seeder
         // Matriks permission:
         // [role_id, perm_key, can_write]
         $perms = [
-            // Admin: akses penuh ke manajemen
-            [1, 'dashboard',     1], [1, 'tiket',      1], [1, 'user_mgmt',  1],
-            [1, 'role_mgmt',     1], [1, 'audit_log',  1], [1, 'analytics_dw', 0],
+            // Admin: akses penuh ke manajemen dan operasional
+            [1, 'dashboard',     1], [1, 'tiket',         1], [1, 'user_mgmt',     1],
+            [1, 'role_mgmt',     1], [1, 'audit_log',     1], [1, 'analytics_dw',  0],
+            [1, 'umum_rt',       1], [1, 'aset_logistik', 1], [1, 'pengadaan',     1],
+            [1, 'risalah',       1], [1, 'ref_akun',      1],
 
-            // Pimpinan: monitoring semua, tidak bisa write
-            [2, 'dashboard',     0], [2, 'tiket',      0], [2, 'analytics_dw', 0],
-            [2, 'audit_log',     0],
+            // Pimpinan: monitoring semua (read-only), tidak bisa write
+            [2, 'dashboard',     0], [2, 'tiket',         0], [2, 'analytics_dw',  0],
+            [2, 'audit_log',     0], [2, 'umum_rt',       0], [2, 'aset_logistik', 0],
+            [2, 'pengadaan',     0], [2, 'risalah',       0], [2, 'ref_akun',      0],
 
             // User / Pemohon: hanya buat dan lihat tiket sendiri
             [6, 'dashboard',     0], [6, 'tiket',      1],
@@ -54,15 +57,16 @@ class RolePermissionSeeder extends Seeder
             // Operator: alokasikan tiket
             [7, 'dashboard',     1], [7, 'tiket',      1],
 
-            // Kabag: approve/reject tiket di bagiannya
-            [10, 'dashboard',    1], [10, 'tiket',     1],
-            [11, 'dashboard',    1], [11, 'tiket',     1],
-            [12, 'dashboard',    1], [12, 'tiket',     1],
+            // Kabag: keputusan tiket dan operasional di bagiannya
+            [10, 'dashboard',    1], [10, 'tiket',     1], [10, 'umum_rt',       1], [10, 'risalah', 1],
+            [11, 'dashboard',    1], [11, 'tiket',     1], [11, 'aset_logistik', 1], [11, 'ref_akun', 1],
+            [12, 'dashboard',    1], [12, 'tiket',     1], [12, 'pengadaan',     1],
 
-            // Staf: kerjakan tiket di bagiannya
-            [13, 'dashboard',    1], [13, 'tiket',     1],
-            [14, 'dashboard',    1], [14, 'tiket',     1],
-            [15, 'dashboard',    1], [15, 'tiket',     1],
+            // Staf: kerjakan tiket & pencatatan internal di bagiannya
+            [13, 'dashboard',    1], [13, 'tiket',     1], [13, 'umum_rt',       1], [13, 'risalah', 1],
+            [14, 'dashboard',    1], [14, 'tiket',     1], [14, 'aset_logistik', 1], [14, 'ref_akun', 1],
+            [15, 'dashboard',    1], [15, 'tiket',     1], [15, 'pengadaan',     1],
+
         ];
 
         foreach ($perms as [$roleId, $key, $write]) {

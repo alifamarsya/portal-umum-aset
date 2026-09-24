@@ -18,7 +18,6 @@ class VerifikasiAkurasiEtlCommand extends Command
 
         $rawTotal = (float) UmBiayaHarian::whereMonth('tanggal', $bulan)
             ->whereYear('tanggal', $tahun)
-            ->where('approval_status', 'Disetujui')
             ->sum('jumlah');
 
         $factTotal = (float) FactBiayaBulanan::whereHas('waktu', function ($q) use ($bulan, $tahun) {
