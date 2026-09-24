@@ -19,7 +19,6 @@ class DeteksiAnomaliTransaksiCommand extends Command
 
         foreach ($kategoriList as $kategori) {
             $transaksi = UmBiayaHarian::where('kategori', $kategori)
-                ->where('approval_status', 'Disetujui')
                 ->get(['id', 'jumlah', 'tanggal', 'uraian']);
 
             if ($transaksi->count() < 5) {

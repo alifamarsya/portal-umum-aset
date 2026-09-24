@@ -53,7 +53,6 @@ class EtlDataWarehouseCommand extends Command
     private function etlBiaya(DimWaktu $dimWaktu, Carbon $awal, Carbon $akhir): void
     {
         UmBiayaHarian::whereBetween('tanggal', [$awal, $akhir])
-            ->where('approval_status', 'Disetujui')
             ->selectRaw('kategori, count(*) as jml, sum(jumlah) as total')
             ->groupBy('kategori')
             ->get()
