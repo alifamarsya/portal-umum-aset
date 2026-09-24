@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Middleware\CheckModulePermission;
-use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\EnsureSuperadmin;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -12,10 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Alias dipakai di route: ->middleware('permission:tiket,write')
+        // Alias dipakai di route: ->middleware('permission:aset_logistik,write')
         $middleware->alias([
             'permission' => CheckModulePermission::class,
-            'admin'      => EnsureAdmin::class,
+            'superadmin' => EnsureSuperadmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
