@@ -70,10 +70,8 @@
                         <td class="py-2 text-ink truncate max-w-[160px]">{{ $spk->pekerjaan }}</td>
                         <td class="py-2 text-right font-mono">Rp {{ number_format((float)$spk->nilai_spk, 0, ',', '.') }}</td>
                         <td class="py-2 text-right">
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-medium
-                                {{ $spk->approval_status === 'Disetujui' ? 'bg-emerald-50 text-emerald-700' :
-                                   ($spk->approval_status === 'Ditolak'  ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700') }}">
-                                {{ $spk->approval_status }}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700">
+                                {{ $spk->status ?? 'Aktif' }}
                             </span>
                         </td>
                     </tr>

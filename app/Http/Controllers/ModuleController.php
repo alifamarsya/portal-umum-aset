@@ -28,10 +28,9 @@ class ModuleController extends Controller
         $cfg = $this->config($key);
         $user = auth()->user();
 
-        // 1. Mode Checker (Approve / Reject)
+        // 1. Mode Checker (Ditiadakan - Approval hanya di Sistem Tiket)
         if ($mode === 'checker') {
-            abort_unless($user && $user->isChecker(), 403, 'Hanya Pimpinan Divisi (Checker) yang dapat menyetujui atau menolak transaksi.');
-            return $cfg;
+            abort(404, 'Alur approval pada modul operasional telah dinonaktifkan. Seluruh persetujuan dipusatkan pada Sistem Tiket.');
         }
 
         // 2. Mode Read (Melihat data modul)
@@ -40,7 +39,7 @@ class ModuleController extends Controller
             return $cfg;
         }
 
-        // 3. Mode Write (Maker: Tambah, Ubah, Hapus data)
+        // 3. Mode Write (Pencatatan internal: Tambah, Ubah, Hapus)
         abort_unless($user && $user->canAccessModule($cfg['perm']), 403, "Role Anda tidak memiliki akses ke modul {$cfg['modul']}.");
         abort_unless($user && $user->canWriteModule($cfg['perm']), 403, "Role Anda hanya bisa melihat modul {$cfg['modul']}, tidak bisa menambah atau mengubah data.");
 
@@ -79,18 +78,10 @@ class ModuleController extends Controller
         $data = $this->validated($request, $cfg);
         $data = $this->hitungAmortisasiJikaPerlu($key, $data);
 
-        // ===== PERBAIKAN UTAMA (semua modul) =====
         // Hapus field yang nilainya null supaya default database dipakai
-        // Mencegah error: Column 'xxx' cannot be null
         $data = array_filter($data, function ($value) {
             return !is_null($value);
         });
-        // ========================================
-
-        if ($cfg['maker_checker']) {
-            $data['maker_id'] = auth()->id();
-            $data['approval_status'] = 'Diajukan';
-        }
 
         if (array_key_exists('dibuat_oleh', $cfg['fields'])) {
             $data['dibuat_oleh'] = auth()->user()->nama_lengkap ?? auth()->user()->name;
@@ -147,43 +138,16 @@ class ModuleController extends Controller
         return redirect()->route('modul.index', $key)->with('status', "{$cfg['judul']} berhasil dihapus.");
     }
 
-    // --- Alur Maker-Checker ---
+    // --- Alur Approval Operasional Dinonaktifkan (Approval Dipusatkan di Sistem Tiket) ---
 
     public function approve(string $key, int $id)
     {
-        $cfg = $this->authorizeModule($key, 'checker');
-        abort_unless($cfg['maker_checker'], 404);
-        $item = $cfg['model']::findOrFail($id);
-
-        Gate::authorize('approve', $item);
-
-        $item->update([
-            'checker_id' => auth()->id(),
-            'approval_status' => 'Disetujui',
-            'approved_at' => now(),
-        ]);
-        $this->audit('APPROVE', $cfg['modul'], $cfg['judul'], $item->id, 'Menyetujui transaksi (checker)');
-
-        return back()->with('status', 'Disetujui.');
+        abort(404, 'Alur approval pada modul operasional telah dinonaktifkan. Seluruh persetujuan dipusatkan pada Sistem Tiket.');
     }
 
     public function reject(Request $request, string $key, int $id)
     {
-        $cfg = $this->authorizeModule($key, 'checker');
-        abort_unless($cfg['maker_checker'], 404);
-        $item = $cfg['model']::findOrFail($id);
-
-        Gate::authorize('reject', $item);
-
-        $item->update([
-            'checker_id' => auth()->id(),
-            'approval_status' => 'Ditolak',
-            'approved_at' => now(),
-            'catatan_approval' => $request->input('catatan'),
-        ]);
-        $this->audit('REJECT', $cfg['modul'], $cfg['judul'], $item->id, 'Menolak transaksi (checker): ' . $request->input('catatan'));
-
-        return back()->with('status', 'Ditolak.');
+        abort(404, 'Alur approval pada modul operasional telah dinonaktifkan. Seluruh persetujuan dipusatkan pada Sistem Tiket.');
     }
 
     private function validated(Request $request, array $cfg): array
@@ -209,8 +173,16 @@ class ModuleController extends Controller
         $request->merge($input);
 
         // 4. Bangun rules validasi
+        // Field yang diisi otomatis server-side tidak divalidasi dari input user
+        $serverFilled = ['dibuat_oleh'];
+
         $rules = [];
         foreach ($cfg['fields'] as $field => $meta) {
+            // Lewati field yang diisi otomatis oleh server
+            if (in_array($field, $serverFilled)) {
+                continue;
+            }
+
             $type = $meta['type'] ?? 'text';
             $isRequired = $meta['req'] ?? false;
 
