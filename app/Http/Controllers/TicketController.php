@@ -25,13 +25,28 @@ class TicketController extends Controller
         $user  = auth()->user();
         abort_unless($user && $user->canAccessModule('tiket'), 403, 'Role Anda tidak memiliki akses ke Sistem Tiket.');
 
-        $query = Ticket::visibleBy($user)
+        $baseQuery = Ticket::visibleBy($user);
+
+        // Overview stats counts for user's visible tickets
+        $stats = [
+            'total'        => (clone $baseQuery)->count(),
+            'menunggu'     => (clone $baseQuery)->where('status', Ticket::STATUS_MENUNGGU)->count(),
+            'dalam_proses' => (clone $baseQuery)->whereIn('status', [Ticket::STATUS_DIALOKASIKAN, Ticket::STATUS_DALAM_PROSES])->count(),
+            'selesai'      => (clone $baseQuery)->whereIn('status', [Ticket::STATUS_SELESAI, Ticket::STATUS_DITUTUP])->count(),
+        ];
+
+        $query = (clone $baseQuery)
             ->with(['pemohon', 'kategori', 'department', 'assignedStaf'])
             ->latest();
 
         // Filter status (opsional)
         if ($request->filled('status')) {
             $query->where('status', $request->status);
+        }
+
+        // Filter jenis pengajuan (opsional)
+        if ($request->filled('jenis_pengajuan')) {
+            $query->where('jenis_pengajuan', $request->jenis_pengajuan);
         }
 
         // Filter SLA status (opsional)
@@ -57,19 +72,23 @@ class TicketController extends Controller
             }
         }
 
-        // Search nomor/judul
-        if ($request->filled('q')) {
-            $q = $request->q;
-            $query->where(function ($sub) use ($q) {
-                $sub->where('nomor_tiket', 'like', "%{$q}%")
-                    ->orWhere('judul', 'like', "%{$q}%");
+        // Search nomor/judul/deskripsi/pemohon
+        if ($request->filled('search') || $request->filled('q')) {
+            $keyword = $request->input('search') ?: $request->input('q');
+            $query->where(function ($sub) use ($keyword) {
+                $sub->where('nomor_tiket', 'like', "%{$keyword}%")
+                    ->orWhere('judul', 'like', "%{$keyword}%")
+                    ->orWhere('deskripsi', 'like', "%{$keyword}%")
+                    ->orWhereHas('pemohon', function ($p) use ($keyword) {
+                        $p->where('nama_lengkap', 'like', "%{$keyword}%");
+                    });
             });
         }
 
         $tikets    = $query->paginate(15)->withQueryString();
         $statuses  = Ticket::allStatuses();
 
-        return view('tiket.index', compact('tikets', 'statuses'));
+        return view('tiket.index', compact('tikets', 'statuses', 'stats'));
     }
 
     // ── Form Buat Tiket (user only) ───────────────────────────────────────────

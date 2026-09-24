@@ -6,8 +6,8 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ModuleController;
-use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\RisalahRapatController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TicketController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,6 +22,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
     Route::get('/ganti-password-wajib', [LoginController::class, 'forceChangeForm'])->name('password.force-change');
     Route::post('/ganti-password-wajib', [LoginController::class, 'forceChange'])->name('password.force-change.submit');
+
+    // Profil pengguna
+    Route::get('/profil', [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profil/ubah-password', [ProfileController::class, 'changePasswordForm'])->name('profile.change-password');
+    Route::post('/profil/ubah-password', [ProfileController::class, 'updatePassword'])->name('profile.update-password');
 
     // Dashboard (view berbeda per role, lihat DashboardController)
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
@@ -61,12 +66,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/{id}/setujui', [ModuleController::class, 'approve'])->name('approve');
         Route::post('/{id}/tolak',   [ModuleController::class, 'reject'])->name('reject');
     });
-
-    // Panduan
-    Route::get('/panduan', [PanduanController::class, 'index'])->name('panduan.index');
-    Route::post('/panduan', [PanduanController::class, 'store'])->name('panduan.store');
-    Route::put('/panduan/{panduan}', [PanduanController::class, 'update'])->name('panduan.update');
-    Route::delete('/panduan/{panduan}', [PanduanController::class, 'destroy'])->name('panduan.destroy');
 
     // Risalah Rapat
     Route::resource('risalah', RisalahRapatController::class)->except(['show']);

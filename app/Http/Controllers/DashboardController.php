@@ -83,28 +83,98 @@ class DashboardController extends Controller
     private function adminData(): array
     {
         return [
-            'totalTiket'       => Ticket::count(),
+            'totalTiket'         => Ticket::count(),
             'menungguVerifikasi' => Ticket::where('status', Ticket::STATUS_MENUNGGU)->count(),
-            'dalamProses'      => Ticket::where('status', Ticket::STATUS_DALAM_PROSES)->count(),
-            'selesaiHariIni'   => Ticket::where('status', Ticket::STATUS_SELESAI)->whereDate('updated_at', today())->count(),
-            'totalUser'        => User::where('is_active', true)->count(),
-            'tiketTerbaru'     => Ticket::with(['pemohon', 'department'])->latest()->take(5)->get(),
-            'statsByStatus'    => $this->statsByStatus(),
+            'dialokasikan'       => Ticket::where('status', Ticket::STATUS_DIALOKASIKAN)->count(),
+            'dalamProses'        => Ticket::where('status', Ticket::STATUS_DALAM_PROSES)->count(),
+            'selesaiHariIni'     => Ticket::where('status', Ticket::STATUS_SELESAI)->whereDate('updated_at', today())->count(),
+            'totalUser'          => User::where('is_active', true)->count(),
+            'totalPengguna'      => User::count(),
+            'inactiveUsers'      => User::where('is_active', false)->count(),
+            'mustChangePwdUsers' => User::where('must_change_pwd', true)->count(),
+            'totalAuditLogs'     => AuditLog::count(),
+            'tiketTerbaru'       => Ticket::with(['pemohon', 'department'])->latest()->take(5)->get(),
+            'statsByStatus'      => $this->statsByStatus(),
         ];
     }
 
     private function pimpinanData(): array
     {
+        // 1. Sistem Tiket (Pusat Approval & Permintaan Layanan)
+        $totalTiket = Ticket::count();
+        $statsByStatus = $this->statsByStatus();
+
+        // SLA Overdue
+        $tiketOverdue = Ticket::whereNotIn('status', [Ticket::STATUS_SELESAI, Ticket::STATUS_DITUTUP, Ticket::STATUS_DITOLAK])
+            ->whereNotNull('resolution_due_at')
+            ->where('resolution_due_at', '<', now())
+            ->count();
+        $tiketOverdueResponse = Ticket::where('status', Ticket::STATUS_MENUNGGU)
+            ->whereNotNull('response_due_at')
+            ->where('response_due_at', '<', now())
+            ->count();
+
+        // Breakdown per Bagian Tujuan
+        $depts = \App\Models\InternalDepartment::all();
+        $deptTickets = [];
+        foreach ($depts as $d) {
+            $deptTickets[] = [
+                'id'       => $d->id,
+                'nama'     => $d->nama,
+                'slug'     => $d->slug,
+                'total'    => Ticket::where('department_id', $d->id)->count(),
+                'menunggu' => Ticket::where('department_id', $d->id)->where('status', Ticket::STATUS_DIALOKASIKAN)->count(),
+                'proses'   => Ticket::where('department_id', $d->id)->where('status', Ticket::STATUS_DALAM_PROSES)->count(),
+                'selesai'  => Ticket::where('department_id', $d->id)->whereIn('status', [Ticket::STATUS_SELESAI, Ticket::STATUS_DITUTUP])->count(),
+            ];
+        }
+
+        // 2. Catatan Operasional Internal Semua Bagian (CRUD Internal Tanpa Maker-Checker)
+        $operasional = [
+            'umum' => [
+                'kendaraan'        => \App\Models\UmKendaraan::count(),
+                'kendaraan_aktif'  => \App\Models\UmKendaraan::where('status', 'Aktif')->count(),
+                'biaya_bulan_ini'  => (float) \App\Models\UmBiayaHarian::whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year)->sum('jumlah'),
+                'fasilitas_kantor' => \App\Models\UmFasilitasKantor::count(),
+                'kebersihan_bln'   => \App\Models\UmChecklistKebersihan::whereMonth('tanggal', now()->month)->count(),
+                'insiden_k3'       => \App\Models\UmK3Insiden::count(),
+            ],
+            'aset' => [
+                'total_aset'      => \App\Models\AsAset::count(),
+                'nilai_perolehan' => (float) \App\Models\AsAset::sum('nilai_perolehan'),
+                'mutasi'          => \App\Models\AsMutasiAset::count(),
+                'disposal'        => \App\Models\AsDisposalAset::count(),
+                'pks_aktif'       => \App\Models\AsPks::count(),
+                'pks_near_due'    => \App\Models\AsPks::whereNotNull('jatuh_tempo')->whereBetween('jatuh_tempo', [now(), now()->addDays(60)])->count(),
+                'invoice_sewa'    => \App\Models\AsInvoiceSewa::count(),
+                'temuan_terbuka'  => \App\Models\AsTemuan::where('status', '!=', 'Selesai')->count(),
+                'penerimaan'      => \App\Models\AsPenerimaanBarang::count(),
+                'distribusi'      => \App\Models\AsDistribusiBarang::count(),
+            ],
+            'pengadaan' => [
+                'total_spk'           => \App\Models\PgSpk::count(),
+                'nilai_spk'           => (float) \App\Models\PgSpk::sum('nilai'),
+                'perencanaan'         => \App\Models\PmPerencanaanKebutuhan::count(),
+                'jadwal_pemeliharaan' => \App\Models\PmJadwalPemeliharaan::count(),
+                'monitoring_kondisi'  => \App\Models\PmMonitoringKondisi::count(),
+                'tindak_lanjut'       => \App\Models\PmTindakLanjutPerbaikan::count(),
+            ],
+        ];
+
         $base = [
-            'totalTiket'         => Ticket::count(),
-            'menungguVerifikasi' => Ticket::where('status', Ticket::STATUS_MENUNGGU)->count(),
-            'dialokasikan'       => Ticket::where('status', Ticket::STATUS_DIALOKASIKAN)->count(),
-            'dalamProses'        => Ticket::where('status', Ticket::STATUS_DALAM_PROSES)->count(),
-            'selesai'            => Ticket::where('status', Ticket::STATUS_SELESAI)->count(),
-            'ditolak'            => Ticket::where('status', Ticket::STATUS_DITOLAK)->count(),
-            'ditutup'            => Ticket::where('status', Ticket::STATUS_DITUTUP)->count(),
-            'tiketTerbaru'       => Ticket::with(['pemohon', 'department'])->latest()->take(10)->get(),
-            'statsByStatus'      => $this->statsByStatus(),
+            'totalTiket'           => $totalTiket,
+            'menungguVerifikasi'   => Ticket::where('status', Ticket::STATUS_MENUNGGU)->count(),
+            'dialokasikan'         => Ticket::where('status', Ticket::STATUS_DIALOKASIKAN)->count(),
+            'dalamProses'          => Ticket::where('status', Ticket::STATUS_DALAM_PROSES)->count(),
+            'selesai'              => Ticket::where('status', Ticket::STATUS_SELESAI)->count(),
+            'ditolak'              => Ticket::where('status', Ticket::STATUS_DITOLAK)->count(),
+            'ditutup'              => Ticket::where('status', Ticket::STATUS_DITUTUP)->count(),
+            'tiketOverdue'         => $tiketOverdue,
+            'tiketOverdueResponse' => $tiketOverdueResponse,
+            'deptTickets'          => $deptTickets,
+            'operasional'          => $operasional,
+            'tiketTerbaru'         => Ticket::with(['pemohon', 'department'])->latest()->take(8)->get(),
+            'statsByStatus'        => $statsByStatus,
         ];
 
         return array_merge($base, $this->analyticsData());
@@ -113,9 +183,19 @@ class DashboardController extends Controller
     private function operatorData(): array
     {
         return [
+            'totalTiket'         => Ticket::count(),
             'menungguVerifikasi' => Ticket::where('status', Ticket::STATUS_MENUNGGU)->count(),
-            'dialokasikan'     => Ticket::where('status', Ticket::STATUS_DIALOKASIKAN)->count(),
-            'tiketMenunggu'    => Ticket::where('status', Ticket::STATUS_MENUNGGU)
+            'dialokasikan'       => Ticket::where('status', Ticket::STATUS_DIALOKASIKAN)->count(),
+            'dalamProses'        => Ticket::where('status', Ticket::STATUS_DALAM_PROSES)->count(),
+            'selesaiBulanIni'    => Ticket::whereIn('status', [Ticket::STATUS_SELESAI, Ticket::STATUS_DITUTUP])
+                ->whereMonth('updated_at', now()->month)
+                ->whereYear('updated_at', now()->year)
+                ->count(),
+            'overdueResponse'    => Ticket::where('status', Ticket::STATUS_MENUNGGU)
+                ->whereNotNull('response_due_at')
+                ->where('response_due_at', '<', now())
+                ->count(),
+            'tiketMenunggu'      => Ticket::where('status', Ticket::STATUS_MENUNGGU)
                 ->with(['pemohon', 'kategori'])
                 ->latest()->take(10)->get(),
         ];
@@ -124,31 +204,47 @@ class DashboardController extends Controller
     private function kabagData(User $user): array
     {
         $deptId = $user->effectiveDepartmentId();
+        $dept = $deptId ? \App\Models\InternalDepartment::find($deptId) : null;
+
         return [
-            'dialokasikan'  => Ticket::where('department_id', $deptId)
+            'department'             => $dept,
+            'dialokasikan'           => Ticket::where('department_id', $deptId)
                 ->where('status', Ticket::STATUS_DIALOKASIKAN)->count(),
-            'dalamProses'   => Ticket::where('department_id', $deptId)
+            'dalamProses'            => Ticket::where('department_id', $deptId)
                 ->where('status', Ticket::STATUS_DALAM_PROSES)->count(),
-            'selesai'       => Ticket::where('department_id', $deptId)
+            'selesai'                => Ticket::where('department_id', $deptId)
                 ->where('status', Ticket::STATUS_SELESAI)->count(),
+            'totalTiketBagian'       => Ticket::where('department_id', $deptId)->count(),
             'tiketMenungguKeputusan' => Ticket::where('department_id', $deptId)
                 ->where('status', Ticket::STATUS_DIALOKASIKAN)
                 ->with(['pemohon', 'kategori'])
                 ->latest()->take(10)->get(),
+            'tiketDikerjakan'        => Ticket::where('department_id', $deptId)
+                ->where('status', Ticket::STATUS_DALAM_PROSES)
+                ->with(['pemohon', 'assignedStaf', 'kategori'])
+                ->latest()->take(5)->get(),
         ];
     }
 
     private function stafData(User $user): array
     {
         $deptId = $user->effectiveDepartmentId();
+        $dept = $deptId ? \App\Models\InternalDepartment::find($deptId) : null;
+
         return [
-            'ditugaskan'    => Ticket::where('department_id', $deptId)
+            'department'         => $dept,
+            'ditugaskan'         => Ticket::where('department_id', $deptId)
                 ->where('status', Ticket::STATUS_DALAM_PROSES)->count(),
-            'selesai'       => Ticket::where('department_id', $deptId)
+            'selesai'            => Ticket::where('department_id', $deptId)
                 ->where('status', Ticket::STATUS_SELESAI)->count(),
-            'tiketSaya'     => Ticket::where('department_id', $deptId)
+            'tugasSayaPersonal'  => Ticket::where('department_id', $deptId)
+                ->where('assigned_to', $user->id)
+                ->where('status', Ticket::STATUS_DALAM_PROSES)->count(),
+            'totalTugas'         => Ticket::where('department_id', $deptId)
+                ->whereIn('status', [Ticket::STATUS_DALAM_PROSES, Ticket::STATUS_SELESAI, Ticket::STATUS_DITUTUP])->count(),
+            'tiketSaya'          => Ticket::where('department_id', $deptId)
                 ->where('status', Ticket::STATUS_DALAM_PROSES)
-                ->with(['pemohon', 'kategori'])
+                ->with(['pemohon', 'kategori', 'assignedStaf'])
                 ->latest()->take(10)->get(),
         ];
     }
@@ -158,6 +254,7 @@ class DashboardController extends Controller
         return [
             'totalTiket'       => Ticket::where('pemohon_id', $user->id)->count(),
             'menunggu'         => Ticket::where('pemohon_id', $user->id)->where('status', Ticket::STATUS_MENUNGGU)->count(),
+            'dialokasikan'     => Ticket::where('pemohon_id', $user->id)->where('status', Ticket::STATUS_DIALOKASIKAN)->count(),
             'dalamProses'      => Ticket::where('pemohon_id', $user->id)->where('status', Ticket::STATUS_DALAM_PROSES)->count(),
             'selesai'          => Ticket::where('pemohon_id', $user->id)->where('status', Ticket::STATUS_SELESAI)->count(),
             'tiketSaya'        => Ticket::where('pemohon_id', $user->id)
