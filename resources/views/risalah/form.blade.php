@@ -9,13 +9,26 @@
         @csrf
         @if ($item) @method('PUT') @endif
         @foreach (['nomor'=>'text','judul'=>'text','tanggal'=>'date','waktu'=>'text','tempat'=>'text','pemimpin'=>'text','peserta'=>'textarea','agenda'=>'textarea','pembahasan'=>'textarea','keputusan'=>'textarea','tindak_lanjut'=>'textarea'] as $field => $type)
+            @php $isRequired = in_array($field, ['judul', 'tanggal']); @endphp
             <div>
-                <label class="block text-[13px] font-medium mb-1.5 text-slate-700">{{ ucwords(str_replace('_',' ',$field)) }}</label>
+                <label class="block text-[13px] font-medium mb-1.5 text-slate-700">
+                    {{ ucwords(str_replace('_',' ',$field)) }}
+                    @if ($isRequired)
+                        <span class="text-rose-500 font-bold ml-0.5">*</span>
+                        <span class="text-[11px] text-rose-500 font-normal">(wajib diisi)</span>
+                    @endif
+                </label>
                 @if ($type === 'textarea')
-                    <textarea name="{{ $field }}" rows="3" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand transition">{{ old($field, $item?->$field) }}</textarea>
+                    <textarea name="{{ $field }}" rows="3" {{ $isRequired ? 'required' : '' }}
+                              class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand transition">{{ old($field, $item?->$field) }}</textarea>
                 @else
-                    <input type="{{ $type }}" name="{{ $field }}" value="{{ old($field, $item?->$field) }}" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand transition">
+                    <input type="{{ $type }}" name="{{ $field }}" value="{{ old($field, $item?->$field) }}"
+                           {{ $isRequired ? 'required' : '' }}
+                           class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand transition">
                 @endif
+                @error($field)
+                    <p class="text-[12px] text-rose-500 mt-1 font-medium">{{ $message }}</p>
+                @enderror
             </div>
         @endforeach
         <div class="pt-6 mt-2 border-t border-slate-100 flex gap-3">

@@ -121,7 +121,6 @@ public function index(Request $request)
     public function detailKategori(string $kategori)
     {
         $transaksi = UmBiayaHarian::where('kategori', $kategori)
-            ->where('approval_status', 'Disetujui')
             ->orderBy('tanggal')
             ->get(['tanggal', 'nama_beban', 'jumlah', 'uraian']);
 
