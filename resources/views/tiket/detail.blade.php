@@ -535,55 +535,6 @@
         </div>
     @endif
 
-    {{-- 4.2 OPERATOR: Penyesuaian Klasifikasi & SLA (Status != Ditutup/Ditolak) --}}
-    @if ($user->isOperator() && !in_array($tiket->status, ['Ditutup', 'Ditolak']))
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs p-6">
-            <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-                        @include('partials.icon', ['name' => 'wrench', 'class' => 'w-4 h-4'])
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-bold text-slate-800">Penyesuaian Klasifikasi &amp; SLA</h3>
-                        <p class="text-xs text-slate-400">Atur ulang klasifikasi pengajuan dan target SLA resolusi jika diperlukan</p>
-                    </div>
-                </div>
-                <span class="text-[10.5px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">Wewenang Operator</span>
-            </div>
-
-            <form action="{{ route('tiket.klasifikasi', $tiket) }}" method="POST" class="space-y-4">
-                @csrf
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Pengajuan</label>
-                        <select name="jenis_pengajuan" required class="w-full text-xs rounded-xl border border-slate-300 px-3.5 py-2.5 outline-none focus:border-[#114E84] bg-white">
-                            <option value="Permintaan" {{ ($tiket->jenis_pengajuan ?? 'Permintaan') === 'Permintaan' ? 'selected' : '' }}>Permintaan</option>
-                            <option value="Permasalahan" {{ ($tiket->jenis_pengajuan ?? '') === 'Permasalahan' ? 'selected' : '' }}>Permasalahan</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Tingkat Prioritas</label>
-                        <select name="prioritas" required class="w-full text-xs rounded-xl border border-slate-300 px-3.5 py-2.5 outline-none focus:border-[#114E84] bg-white">
-                            <option value="Rendah" {{ ($tiket->prioritas ?? 'Sedang') === 'Rendah' ? 'selected' : '' }}>Rendah (SLA 72 Jam)</option>
-                            <option value="Sedang" {{ ($tiket->prioritas ?? 'Sedang') === 'Sedang' ? 'selected' : '' }}>Sedang (SLA 48 Jam)</option>
-                            <option value="Tinggi" {{ ($tiket->prioritas ?? 'Sedang') === 'Tinggi' ? 'selected' : '' }}>Tinggi (SLA 12 Jam)</option>
-                            <option value="Kritis" {{ ($tiket->prioritas ?? 'Sedang') === 'Kritis' ? 'selected' : '' }}>Kritis (SLA 4 Jam)</option>
-                        </select>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Catatan Perubahan (Opsional)</label>
-                    <textarea name="catatan" rows="2" placeholder="Alasan penyesuaian klasifikasi..."
-                              class="w-full text-xs rounded-xl border border-slate-300 px-3.5 py-2.5 outline-none focus:border-[#114E84] resize-none leading-relaxed"></textarea>
-                </div>
-                <div class="flex justify-end">
-                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition shadow-xs">
-                        Simpan Klasifikasi &amp; SLA
-                    </button>
-                </div>
-            </form>
-        </div>
-    @endif
 
     {{-- 4.3 KEPALA BAGIAN: Persetujuan Disposisi & Penolakan (Status = Dialokasikan) --}}
     @if ($user->isKabag() && $tiket->status === 'Dialokasikan' && $tiket->department_id === $user->effectiveDepartmentId())
