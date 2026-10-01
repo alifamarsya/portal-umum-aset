@@ -2,70 +2,68 @@
 
 namespace App\Console\Commands;
 
-use App\Models\AuditLog;
+use App\Jobs\WeeklyBlockchainAnchorJob;
 use App\Models\AuditLogAnchor;
+use App\Services\BlockchainAnchorService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Process;
 
-// CPMK Blockchain: mengirim "root hash" gabungan seluruh AuditLog periode
-// berjalan ke smart contract di testnet Ethereum Sepolia, sebagai bukti
-// tamper-evidence tambahan di ledger publik (anchoring), bukan cuma di
-// database internal.
 class AnchorAuditChainCommand extends Command
 {
-    protected $signature = 'audit:anchor-chain';
-    protected $description = 'Kirim root hash audit log periode berjalan ke testnet Ethereum';
+    protected $signature = 'audit:anchor-chain {--all : Anchor seluruh periode audit log yang belum ter-anchor} {--queue : Jalankan di background queue job}';
+    protected $description = 'Kirim root hash audit log periode mingguan ke testnet Ethereum Sepolia (manual/debug fallback)';
 
-    public function handle(): int
+    public function handle(BlockchainAnchorService $anchorService): int
     {
-        $awal = now()->startOfWeek();
-        $akhir = now()->endOfWeek();
-
-        $hashes = AuditLog::whereBetween('created_at', [$awal, $akhir])
-            ->orderBy('id')
-            ->pluck('hash');
-
-        if ($hashes->isEmpty()) {
-            $this->info('Tidak ada audit log baru minggu ini, skip anchoring.');
+        if ($this->option('queue')) {
+            WeeklyBlockchainAnchorJob::dispatch();
+            $this->info('WeeklyBlockchainAnchorJob berhasil dikirim ke antrean queue!');
             return self::SUCCESS;
         }
 
-        // Root hash = SHA-256 dari gabungan seluruh hash minggu ini
-        $rootHash = '0x' . hash('sha256', $hashes->implode(''));
+        $this->info('Memulai proses blockchain anchoring ke Sepolia testnet...');
 
-        $this->info("Mengirim root hash: {$rootHash}");
+        if ($this->option('all')) {
+            $this->info('Memeriksa seluruh pekan yang belum ter-anchor...');
+            $anchors = $anchorService->anchorUnanchoredBatches();
 
-       $result = Process::path(base_path('blockchain-anchor'))
-    ->timeout(120)
-    ->run(['node', 'anchor.js', $rootHash]);
+            if (empty($anchors)) {
+                $this->info('Semua aktivitas audit log sudah ter-anchor dengan status sukses.');
+                return self::SUCCESS;
+            }
 
-$rawOutput = $result->output();
+            $rows = [];
+            foreach ($anchors as $a) {
+                $rows[] = [
+                    $a->periode_awal?->format('d/m/Y') . ' - ' . $a->periode_akhir?->format('d/m/Y'),
+                    $a->total_logs,
+                    $a->status,
+                    $a->tx_hash ?? '-',
+                    $a->block_number ?? '-',
+                ];
+            }
 
-// Ambil substring hanya dari karakter '{' sampai '}' (mengabaikan teks log biasa)
-$jsonStart = strpos($rawOutput, '{');
-$jsonEnd = strrpos($rawOutput, '}');
+            $this->table(['Periode', 'Total Log', 'Status', 'Tx Hash', 'Block Number'], $rows);
+            return self::SUCCESS;
+        }
 
-if ($jsonStart !== false && $jsonEnd !== false) {
-    $jsonString = substr($rawOutput, $jsonStart, $jsonEnd - $jsonStart + 1);
-    $output = json_decode($jsonString, true);
-} else {
-    $output = null;
-}
+        // Default: anchor periode pekan ini
+        $anchor = $anchorService->anchorPeriod(now()->startOfWeek(), now()->endOfWeek());
 
-if (!($output['success'] ?? false)) {
-    $this->error('Gagal anchoring: ' . ($output['error'] ?? $result->errorOutput()));
-    return self::FAILURE;
-}
+        if (!$anchor) {
+            $this->warn('Tidak ada audit log baru pada periode pekan ini.');
+            return self::SUCCESS;
+        }
 
-AuditLogAnchor::create([
-    'root_hash'    => $rootHash,
-    'tx_hash'      => $output['txHash'],
-    'block_number' => $output['blockNumber'],
-    'periode_awal' => $awal,
-    'periode_akhir' => $akhir,
-]);
+        if ($anchor->isSuccess()) {
+            $this->info("Berhasil di-anchor ke Sepolia!");
+            $this->line("Root Hash    : {$anchor->root_hash}");
+            $this->line("Tx Hash      : {$anchor->tx_hash}");
+            $this->line("Block Number : {$anchor->block_number}");
+            $this->line("Explorer     : https://sepolia.etherscan.io/tx/{$anchor->tx_hash}");
+            return self::SUCCESS;
+        }
 
-$this->info("Berhasil! Tx: {$output['txHash']}");
-return self::SUCCESS;
+        $this->error("Anchoring gagal: {$anchor->error_message}");
+        return self::FAILURE;
     }
 }

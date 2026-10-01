@@ -53,6 +53,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/{tiket}/tutup',             [TicketController::class, 'tutup'])->name('tutup');
         Route::get('/{tiket}/attachment/view',    [TicketController::class, 'viewAttachment'])->name('attachment.view');
         Route::get('/{tiket}/attachment/download',[TicketController::class, 'downloadAttachment'])->name('attachment.download');
+        Route::get('/{tiket}/lampiran/{attachment}/view',    [TicketController::class, 'viewAttachmentFile'])->name('attachment.file.view');
+        Route::get('/{tiket}/lampiran/{attachment}/download',[TicketController::class, 'downloadAttachmentFile'])->name('attachment.file.download');
     });
 
     // ── Modul CRUD Generik (20 modul, lihat config/modules.php) ─────────────
@@ -85,6 +87,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/roles/{role}/permissions', [RoleController::class, 'updatePermissions'])->name('roles.permissions');
 
         Route::get('/audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
+        Route::post('/audit-log/trigger-anchor', [AuditLogController::class, 'triggerAnchor'])->name('audit-log.trigger-anchor');
     });
 
     // Rehash audit log (admin, tanpa prefix middleware group agar backward-compatible)

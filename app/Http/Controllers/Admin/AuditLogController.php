@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\WeeklyBlockchainAnchorJob;
 use App\Models\AuditLog;
 use App\Models\AuditLogAnchor;
 use App\Services\AuditHasher;
+use App\Services\BlockchainAnchorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +30,6 @@ class AuditLogController extends Controller
 
         // 2. Verifikasi Rantai Hash per Baris (Hash Chain Verification)
         $expectedPrev = null;
-        // Kita urutkan dari ID terkecil (awal) untuk memverifikasi konsistensi rantai
         $allLogs = AuditLog::orderBy('id', 'asc')->get();
         $tamperedIds = [];
 
@@ -60,23 +61,39 @@ class AuditLogController extends Controller
             }
 
             if ($isTampered) {
-                // Tandai ID ini sebagai baris yang dimanipulasi
                 $tamperedIds[] = $log->id;
             }
 
             $expectedPrev = $log->hash;
         }
 
-        // Tandai item paginated jika termasuk yang dimanipulasi
-        $items->getCollection()->transform(function ($log) use ($tamperedIds) {
+        // Ambil rentang periode sukses anchor untuk menandai baris audit log
+        $successAnchors = AuditLogAnchor::where('status', AuditLogAnchor::STATUS_SUCCESS)->get();
+
+        // Tandai item paginated
+        $items->getCollection()->transform(function ($log) use ($tamperedIds, $successAnchors) {
             $log->is_tampered = in_array($log->id, $tamperedIds);
+
+            // Cek apakah baris log ini tercakup dalam batch anchor sukses
+            $matchedAnchor = $successAnchors->first(function ($a) use ($log) {
+                $start = Carbon::parse($a->periode_awal)->startOfDay();
+                $end   = Carbon::parse($a->periode_akhir)->endOfDay();
+                return $log->created_at >= $start && $log->created_at <= $end;
+            });
+
+            $log->anchored = (bool) $matchedAnchor;
+            $log->anchor_tx = $matchedAnchor?->tx_hash;
+
             return $log;
         });
 
         // 3. Verifikasi Root Hash Blockchain
-        $anchors = AuditLogAnchor::latest()->take(10)->get();
+        $anchors = AuditLogAnchor::latest('id')->take(15)->get();
         $anchors->transform(function ($anchor) {
-            $hashes = AuditLog::whereBetween('created_at', [$anchor->periode_awal, $anchor->periode_akhir])
+            $start = Carbon::parse($anchor->periode_awal)->startOfDay();
+            $end   = Carbon::parse($anchor->periode_akhir)->endOfDay();
+
+            $hashes = AuditLog::whereBetween('created_at', [$start, $end])
                 ->orderBy('id')
                 ->pluck('hash');
 
@@ -87,11 +104,33 @@ class AuditLogController extends Controller
 
             $currentRootHash = '0x' . hash('sha256', $hashes->implode(''));
             $anchor->is_valid = ($currentRootHash === $anchor->root_hash);
-            
+
             return $anchor;
         });
 
         return view('admin.audit-log.index', compact('items', 'anchors', 'tamperedIds'));
+    }
+
+    public function triggerAnchor(Request $request, BlockchainAnchorService $anchorService)
+    {
+        if ($request->boolean('async')) {
+            WeeklyBlockchainAnchorJob::dispatch();
+            return back()->with('success', 'Job otomatisasi anchoring berhasil dikirim ke antrean queue!');
+        }
+
+        $anchors = $anchorService->anchorUnanchoredBatches();
+        $totalSuccess = collect($anchors)->filter(fn ($a) => $a->isSuccess())->count();
+
+        if ($totalSuccess > 0) {
+            return back()->with('success', "Proses anchoring selesai! {$totalSuccess} batch pekan berhasil di-anchor ke Sepolia testnet.");
+        }
+
+        $failed = collect($anchors)->filter(fn ($a) => $a->isFailed())->first();
+        if ($failed) {
+            return back()->with('error', "Anchoring gagal ke Sepolia testnet: {$failed->error_message}");
+        }
+
+        return back()->with('success', 'Semua aktivitas audit log sudah ter-anchor dengan status sukses.');
     }
 
     public function rehash(AuditHasher $hasher)
@@ -114,12 +153,12 @@ class AuditLogController extends Controller
                 $log->keterangan,
                 $createdAtStr
             );
-            
+
             $log->update([
                 'prev_hash' => $expectedPrev,
                 'hash'      => $newHash,
             ]);
-            
+
             $expectedPrev = $newHash;
         }
 

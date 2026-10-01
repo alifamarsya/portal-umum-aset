@@ -1,151 +1,192 @@
 @extends('layouts.app')
 
-@section('title', 'Profil Saya')
+@section('title', 'Profil Pengguna')
 
 @section('content')
-<div class="min-h-screen bg-gray-50 py-8 px-4">
-    <div class="max-w-2xl mx-auto">
+<div class="space-y-6 w-full max-w-full">
 
-        {{-- Breadcrumb --}}
-        <nav class="flex items-center gap-2 text-sm text-gray-500 mb-6">
-            <a href="{{ route('dashboard') }}" class="hover:text-[#114E84] transition-colors">Dashboard</a>
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-            <span class="text-gray-700 font-medium">Profil Saya</span>
-        </nav>
-
-        {{-- Status Alert --}}
-        @if(session('status'))
-        <div class="mb-6 flex items-center gap-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-sm">
-            <svg class="w-5 h-5 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            {{ session('status') }}
+    {{-- Breadcrumb & Page Header --}}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <nav class="flex items-center gap-2 text-xs text-slate-400 mb-1.5">
+                <a href="{{ route('dashboard') }}" class="hover:text-[#114E84] transition">Dashboard</a>
+                <span class="text-slate-300">/</span>
+                <span class="text-slate-600 font-medium">Profil Pengguna</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-ink">Profil Pengguna</h1>
+            <p class="text-xs text-slate-500 mt-0.5">Informasi akun, unit kerja, dan hak akses pengguna di Portal Umum &amp; Aset Bank Sulteng</p>
         </div>
-        @endif
+        <div class="flex items-center gap-3">
+            <a href="{{ route('profile.change-password') }}"
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#114E84] hover:bg-[#0E4272] text-white text-xs font-semibold shadow-2xs transition">
+                @include('partials.icon', ['name' => 'lock', 'class' => 'w-4 h-4 text-white'])
+                <span>Ubah Password</span>
+            </a>
+        </div>
+    </div>
 
-        {{-- Profile Card --}}
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    {{-- Status Alert --}}
+    @if (session('status'))
+        <div class="flex items-center gap-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-xs font-medium animate-enter">
+            @include('partials.icon', ['name' => 'check-circle', 'class' => 'w-5 h-5 text-emerald-600 flex-shrink-0'])
+            <span>{{ session('status') }}</span>
+        </div>
+    @endif
 
-            {{-- Header Banner --}}
-            <div class="h-28 bg-gradient-to-br from-[#114E84] to-[#1D6FB8] relative">
-                <div class="absolute inset-0 opacity-10" style="background-image: url(&quot;data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='1' fill-rule='evenodd'%3E%3Ccircle cx='4' cy='4' r='2'/%3E%3C/g%3E%3C/svg%3E&quot;);"></div>
+    {{-- Main Profile Card (Full Width) --}}
+    <div class="w-full bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+
+        {{-- Header Banner --}}
+        <div class="h-36 sm:h-44 bg-gradient-to-r from-[#114E84] via-[#0E4272] to-[#1D6FB8] relative overflow-hidden">
+            {{-- Decorative pattern overlay --}}
+            <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(#ffffff 1.5px, transparent 1.5px); background-size: 20px 20px;"></div>
+            <div class="absolute -right-10 -bottom-10 w-64 h-64 rounded-full bg-white/5 pointer-events-none"></div>
+            <div class="absolute right-24 -top-12 w-48 h-48 rounded-full bg-white/5 pointer-events-none"></div>
+        </div>
+
+        {{-- Profile Content Area --}}
+        <div class="px-6 sm:px-8 pb-8">
+            {{-- Top Identity Bar --}}
+            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between -mt-16 sm:-mt-20 mb-8 gap-4 border-b border-slate-100 pb-6">
+                <div class="flex flex-col sm:flex-row items-center sm:items-end gap-4 text-center sm:text-left">
+                    {{-- Avatar --}}
+                    <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-br from-[#114E84] to-[#1D6FB8] flex items-center justify-center shadow-lg border-4 border-white flex-shrink-0 text-white font-extrabold text-3xl sm:text-4xl select-none">
+                        {{ strtoupper(substr($user->nama_lengkap ?? $user->username, 0, 1)) }}{{ strtoupper(substr(strstr($user->nama_lengkap ?? '', ' ') ?: '', 1, 1)) }}
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="text-xl sm:text-2xl font-bold text-ink leading-tight">
+                            {{ $user->nama_lengkap ?? $user->username }}
+                        </h2>
+                        <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-2">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-[#114E84] border border-blue-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-[#114E84]"></span>
+                                {{ $user->role?->label ?? $user->role?->nama ?? 'Pengguna' }}
+                            </span>
+                            @if ($user->bagian)
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                                    {{ $user->bagian }}
+                                </span>
+                            @endif
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                Akun Aktif
+                            </span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {{-- Content --}}
-            <div class="px-8 pb-8">
-                <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between -mt-12 mb-6 gap-4">
-                    {{-- Avatar --}}
-                    <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-[#114E84] to-[#1D6FB8] flex items-center justify-center shadow-lg border-4 border-white flex-shrink-0">
-                        <span class="text-white text-3xl font-bold tracking-wider select-none">
-                            {{ strtoupper(substr($user->nama_lengkap ?? $user->username, 0, 1)) }}{{ strtoupper(substr(strstr($user->nama_lengkap ?? '', ' ') ?: '', 1, 1)) }}
-                        </span>
-                    </div>
-                    <a href="{{ route('profile.change-password') }}"
-                       class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#114E84] text-white text-sm font-medium hover:bg-[#0d3d67] transition-all duration-200 shadow-sm hover:shadow-md">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                        </svg>
-                        Ubah Password
-                    </a>
-                </div>
-
-                {{-- Info --}}
-                <div class="space-y-4">
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-900">{{ $user->nama_lengkap ?? $user->username }}</h1>
-                        <span class="inline-flex items-center mt-1 px-3 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-[#114E84]">
-                            {{ $user->role?->label ?? $user->role?->nama ?? 'Pengguna' }}
-                        </span>
-                    </div>
-
-                    <div class="border-t border-gray-100 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-
+            {{-- Detail Attributes Grid (Full Width) --}}
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                        Informasi Akun &amp; Kredensial
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {{-- Username --}}
-                        <div class="flex items-start gap-3">
-                            <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                                <svg class="w-4 h-4 text-[#114E84]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                </svg>
+                        <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 flex items-start gap-3.5">
+                            <div class="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-[#114E84] flex-shrink-0 shadow-2xs">
+                                @include('partials.icon', ['name' => 'users', 'class' => 'w-5 h-5'])
                             </div>
-                            <div>
-                                <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">Username</p>
-                                <p class="text-gray-800 font-semibold mt-0.5">{{ $user->username }}</p>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Username</p>
+                                <p class="text-sm font-bold text-slate-800 mt-0.5 truncate">{{ $user->username }}</p>
                             </div>
                         </div>
 
                         {{-- Email --}}
-                        @if($user->email)
-                        <div class="flex items-start gap-3">
-                            <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                                <svg class="w-4 h-4 text-[#114E84]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                                </svg>
+                        <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 flex items-start gap-3.5">
+                            <div class="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-[#114E84] flex-shrink-0 shadow-2xs">
+                                @include('partials.icon', ['name' => 'inbox', 'class' => 'w-5 h-5'])
                             </div>
-                            <div>
-                                <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">Email</p>
-                                <p class="text-gray-800 font-semibold mt-0.5">{{ $user->email }}</p>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Alamat Email</p>
+                                <p class="text-sm font-bold text-slate-800 mt-0.5 truncate">
+                                    {{ $user->email ?: 'Tidak dicantumkan' }}
+                                </p>
                             </div>
                         </div>
-                        @endif
 
                         {{-- Jabatan --}}
-                        @if($user->jabatan)
-                        <div class="flex items-start gap-3">
-                            <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                                <svg class="w-4 h-4 text-[#114E84]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                                </svg>
+                        <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 flex items-start gap-3.5">
+                            <div class="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-[#114E84] flex-shrink-0 shadow-2xs">
+                                @include('partials.icon', ['name' => 'building', 'class' => 'w-5 h-5'])
                             </div>
-                            <div>
-                                <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">Jabatan</p>
-                                <p class="text-gray-800 font-semibold mt-0.5">{{ $user->jabatan }}</p>
-                            </div>
-                        </div>
-                        @endif
-
-                        {{-- Bagian --}}
-                        @if($user->bagian)
-                        <div class="flex items-start gap-3">
-                            <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                                <svg class="w-4 h-4 text-[#114E84]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">Bagian</p>
-                                <p class="text-gray-800 font-semibold mt-0.5">{{ $user->bagian }}</p>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Jabatan</p>
+                                <p class="text-sm font-bold text-slate-800 mt-0.5 truncate">
+                                    {{ $user->jabatan ?: 'Staf Bank Sulteng' }}
+                                </p>
                             </div>
                         </div>
-                        @endif
 
-                        {{-- Last Login --}}
-                        @if($user->last_login)
-                        <div class="flex items-start gap-3 sm:col-span-2">
-                            <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                                <svg class="w-4 h-4 text-[#114E84]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
+                        {{-- Bagian / Unit Kerja --}}
+                        <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 flex items-start gap-3.5">
+                            <div class="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-[#114E84] flex-shrink-0 shadow-2xs">
+                                @include('partials.icon', ['name' => 'layers', 'class' => 'w-5 h-5'])
                             </div>
-                            <div>
-                                <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">Login Terakhir</p>
-                                <p class="text-gray-800 font-semibold mt-0.5">{{ $user->last_login->format('d F Y, H:i') }} WIB</p>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Bagian / Unit Kerja</p>
+                                <p class="text-sm font-bold text-slate-800 mt-0.5 truncate">
+                                    {{ $user->bagian ?: 'Divisi Umum & Aset' }}
+                                </p>
                             </div>
                         </div>
-                        @endif
 
+                        {{-- Role / Hak Akses --}}
+                        <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 flex items-start gap-3.5">
+                            <div class="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-[#114E84] flex-shrink-0 shadow-2xs">
+                                @include('partials.icon', ['name' => 'shield', 'class' => 'w-5 h-5'])
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Hak Akses Sistem</p>
+                                <p class="text-sm font-bold text-slate-800 mt-0.5 truncate">
+                                    {{ $user->role?->label ?? $user->role?->nama }}
+                                </p>
+                            </div>
+                        </div>
+
+                        {{-- Login Terakhir --}}
+                        <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 flex items-start gap-3.5">
+                            <div class="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-[#114E84] flex-shrink-0 shadow-2xs">
+                                @include('partials.icon', ['name' => 'clock', 'class' => 'w-5 h-5'])
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Login Terakhir</p>
+                                <p class="text-sm font-bold text-slate-800 mt-0.5 truncate">
+                                    @if ($user->last_login)
+                                        {{ $user->last_login->format('d F Y, H:i') }} WITA
+                                    @else
+                                        Sesi ini
+                                    @endif
+                                </p>
+                            </div>
+                        </div>
                     </div>
+                </div>
+
+                {{-- Security & Governance Note --}}
+                <div class="rounded-xl bg-blue-50/70 border border-blue-200/80 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="flex items-start gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-blue-100 text-[#114E84] flex items-center justify-center flex-shrink-0 mt-0.5">
+                            @include('partials.icon', ['name' => 'shield', 'class' => 'w-5 h-5'])
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-[#114E84]">Keamanan Akun &amp; Rekam Jejak Audit</p>
+                            <p class="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                                Seluruh aktivitas transaksi tiket dan mutasi aset tercatat dalam audit log sistem yang di-anchor secara kriptografis ke blockchain Ethereum Sepolia demi transparansi dan integritas data Bank Sulteng.
+                            </p>
+                        </div>
+                    </div>
+                    <a href="{{ route('profile.change-password') }}"
+                       class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#114E84] hover:bg-[#0E4272] text-white text-xs font-semibold shadow-2xs transition whitespace-nowrap self-stretch sm:self-auto justify-center">
+                        @include('partials.icon', ['name' => 'lock', 'class' => 'w-3.5 h-3.5 text-white'])
+                        <span>Ganti Password</span>
+                    </a>
                 </div>
             </div>
         </div>
-
-        {{-- Security Note --}}
-        <div class="mt-4 flex items-center gap-2 text-xs text-gray-400 justify-center">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-            </svg>
-            Data profil Anda terenkripsi dan aman
-        </div>
-
     </div>
+
 </div>
 @endsection

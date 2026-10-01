@@ -42,7 +42,7 @@ class TicketLifecycleTest extends TestCase
         $response = $this->actingAs($user1)->post(route('tiket.store'), [
             'kategori_id'     => $category->id,
             'judul'           => 'Kerusakan AC Ruang Rapat',
-            'deskripsi'       => 'AC di ruang rapat lantai 2 tidak dingin.',
+            'deskripsi'       => 'AC di ruang rapat lantai 2 tidak dingin dan mengeluarkan bunyi bising terus menerus, mohon segera ditinjau oleh staf teknisi terkait.',
             'jenis_pengajuan' => 'Permasalahan',
             'prioritas'       => 'Tinggi',
         ]);
@@ -133,7 +133,7 @@ class TicketLifecycleTest extends TestCase
         $this->actingAs($user1)->post(route('tiket.store'), [
             'kategori_id'     => TicketCategory::first()->id,
             'judul'           => 'Permintaan Laptop Baru',
-            'deskripsi'       => 'Penggantian unit laptop pribadi',
+            'deskripsi'       => 'Penggantian unit laptop pribadi dikarenakan perangkat lama sering mengalami mati mendadak saat digunakan untuk pekerjaan dinas harian.',
             'jenis_pengajuan' => 'Permintaan',
             'prioritas'       => 'Sedang',
         ]);
@@ -250,7 +250,7 @@ class TicketLifecycleTest extends TestCase
         $this->actingAs($user1)->post(route('tiket.store'), [
             'kategori_id'     => $cat->id,
             'judul'           => 'Permintaan Penggantian Lampu Ruangan',
-            'deskripsi'       => 'Lampu redup di area kerja',
+            'deskripsi'       => 'Lampu redup di area kerja lantai 2 gedung utama dan sangat mengganggu kenyamanan kerja staf saat bertugas, mohon dilakukan penggantian bohlam.',
             'jenis_pengajuan' => 'Permintaan',
             'prioritas'       => 'Rendah',
         ]);
@@ -334,7 +334,7 @@ class TicketLifecycleTest extends TestCase
         // Submit form tanpa field 'judul'
         $response = $this->actingAs($user1)->post(route('tiket.store'), [
             'kategori_id'     => $category->id,
-            'deskripsi'       => 'Pengajuan layanan baru tanpa judul manual.',
+            'deskripsi'       => 'Pengajuan layanan baru tanpa judul manual untuk memastikan bahwa sistem menghasilkan judul otomatis secara konsisten sesuai aturan sistem tiket.',
             'jenis_pengajuan' => 'Permintaan',
             'prioritas'       => 'Sedang',
         ]);
@@ -342,8 +342,8 @@ class TicketLifecycleTest extends TestCase
 
         $ticket = Ticket::where('pemohon_id', $user1->id)->latest()->first();
         $this->assertNotNull($ticket);
-        // Memastikan judul terbuat otomatis dari nama kategori dan jenis pengajuan
-        $this->assertEquals("{$category->nama} — Permintaan", $ticket->judul);
+        // Memastikan judul terbuat otomatis dari jenis pengajuan
+        $this->assertEquals("Layanan — Permintaan", $ticket->judul);
         $this->assertEquals('Permintaan', $ticket->jenis_pengajuan);
         $this->assertEquals('Sedang', $ticket->prioritas);
         $this->assertEquals(48, $ticket->sla_jam);
@@ -426,7 +426,7 @@ class TicketLifecycleTest extends TestCase
         // User 1 membuat tiket dengan lampiran
         $response = $this->actingAs($user1)->post(route('tiket.store'), [
             'kategori_id'     => $category->id,
-            'deskripsi'       => 'Tiket dengan file lampiran pendukung',
+            'deskripsi'       => 'Tiket dengan file lampiran pendukung untuk permohonan fasilitas kerja baru sesuai ketentuan operasional yang berlaku di kantor operasional.',
             'jenis_pengajuan' => 'Permintaan',
             'prioritas'       => 'Sedang',
             'attachment'      => $file,
@@ -452,5 +452,73 @@ class TicketLifecycleTest extends TestCase
         // 3. User lain yang tidak memiliki akses ditolak (403 Forbidden)
         $this->actingAs($user2)->get(route('tiket.attachment.view', $ticket->id))->assertStatus(403);
         $this->actingAs($user2)->get(route('tiket.attachment.download', $ticket->id))->assertStatus(403);
+    }
+
+    public function test_user_tidak_bisa_membuat_tiket_jika_deskripsi_kurang_dari_100_karakter(): void
+    {
+        $user1 = User::where('username', 'user1')->first();
+
+        $response = $this->actingAs($user1)->post(route('tiket.store'), [
+            'deskripsi'       => 'Deskripsi terlalu pendek kurang dari seratus karakter.',
+            'jenis_pengajuan' => 'Permintaan',
+            'prioritas'       => 'Sedang',
+        ]);
+
+        $response->assertSessionHasErrors('deskripsi');
+        $this->assertEquals(0, Ticket::where('pemohon_id', $user1->id)->where('deskripsi', 'like', '%terlalu pendek%')->count());
+    }
+
+    public function test_user_bisa_membuat_tiket_tanpa_dropdown_kategori(): void
+    {
+        $user1 = User::where('username', 'user1')->first();
+
+        $response = $this->actingAs($user1)->post(route('tiket.store'), [
+            'deskripsi'       => 'Pengajuan permohonan layanan tanpa memilih kategori layanan karena field kategori layanan telah dihapus dari formulir pengajuan tiket.',
+            'jenis_pengajuan' => 'Permintaan',
+            'prioritas'       => 'Sedang',
+        ]);
+
+        $response->assertRedirect();
+        $ticket = Ticket::where('pemohon_id', $user1->id)->latest()->first();
+        $this->assertNotNull($ticket);
+        $this->assertNull($ticket->kategori_id);
+        $this->assertNull($ticket->kategori);
+        $this->assertEquals('Permintaan', $ticket->jenis_pengajuan);
+    }
+
+    public function test_user_bisa_mengupload_multi_file_lampiran_dan_dapat_diakses(): void
+    {
+        $user1 = User::where('username', 'user1')->first();
+        $operator = User::where('username', 'operator')->first();
+
+        $file1 = \Illuminate\Http\UploadedFile::fake()->create('dokumen1.pdf', 200, 'application/pdf');
+        $file2 = \Illuminate\Http\UploadedFile::fake()->image('foto1.jpg', 600, 400);
+
+        $response = $this->actingAs($user1)->post(route('tiket.store'), [
+            'deskripsi'       => 'Pengajuan fasilitas kerja dilengkapi dengan dokumen PDF rincian dan foto dokumentasi kondisi perangkat lama di ruangan kerja.',
+            'jenis_pengajuan' => 'Permintaan',
+            'prioritas'       => 'Tinggi',
+            'attachments'     => [$file1, $file2],
+        ]);
+
+        $response->assertRedirect();
+        $ticket = Ticket::where('pemohon_id', $user1->id)->latest()->first();
+        $this->assertNotNull($ticket);
+        $this->assertCount(2, $ticket->attachments);
+
+        $att1 = $ticket->attachments->first();
+        $att2 = $ticket->attachments->last();
+
+        $this->assertEquals('dokumen1.pdf', $att1->file_name);
+        $this->assertEquals('foto1.jpg', $att2->file_name);
+        $this->assertTrue($att2->isImage());
+
+        // Pemohon bisa view dan download file lampiran spesifik
+        $this->actingAs($user1)->get(route('tiket.attachment.file.view', [$ticket, $att1]))->assertStatus(200);
+        $this->actingAs($user1)->get(route('tiket.attachment.file.download', [$ticket, $att1]))->assertStatus(200);
+
+        // Operator bisa view dan download file lampiran spesifik
+        $this->actingAs($operator)->get(route('tiket.attachment.file.view', [$ticket, $att2]))->assertStatus(200);
+        $this->actingAs($operator)->get(route('tiket.attachment.file.download', [$ticket, $att2]))->assertStatus(200);
     }
 }

@@ -15,3 +15,9 @@ Schedule::job(new \App\Jobs\CheckTicketSlaJob)->everyFifteenMinutes();
 
 // Jadwal ETL Data Warehouse otomatis setiap awal bulan jam 02:00
 Schedule::command('dw:etl')->monthlyOn(1, '02:00');
+
+// Jadwal otomatis anchoring audit log ke blockchain Sepolia testnet setiap hari Senin jam 01:00
+Schedule::job(new \App\Jobs\WeeklyBlockchainAnchorJob)
+    ->weeklyOn(1, '01:00')
+    ->name('blockchain:weekly-audit-anchor')
+    ->withoutOverlapping();

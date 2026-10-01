@@ -43,14 +43,9 @@ class TicketService
      * User membuat tiket baru.
      * Mengkalkulasi response_due_at otomatis (maks 2 jam kerja 08.00-17.00).
      */
-    public function buatTiket(User $pemohon, array $data, ?UploadedFile $file = null): Ticket
+    public function buatTiket(User $pemohon, array $data, array|UploadedFile|null $files = null): Ticket
     {
-        return DB::transaction(function () use ($pemohon, $data, $file) {
-            $attachmentPath = null;
-            if ($file) {
-                $attachmentPath = $file->store('tiket-attachments', 'public');
-            }
-
+        return DB::transaction(function () use ($pemohon, $data, $files) {
             $jenisPengajuan = $data['jenis_pengajuan'] ?? Ticket::JENIS_PERMINTAAN;
             $prioritas      = $data['prioritas'] ?? Ticket::PRIORITAS_SEDANG;
 
@@ -62,8 +57,9 @@ class TicketService
             $slaJam         = Ticket::SLA_HOURS[$prioritas] ?? 48;
             $slaDueAt       = $now->copy()->addHours($slaJam);
 
-            // Auto-generate judul dari kategori
-            $kategori   = \App\Models\TicketCategory::find($data['kategori_id']);
+            // Auto-generate judul
+            $kategoriId = $data['kategori_id'] ?? null;
+            $kategori   = $kategoriId ? \App\Models\TicketCategory::find($kategoriId) : null;
             $nomorTiket = $this->generateNomorTiket();
             $judulAuto  = ($kategori ? $kategori->nama : 'Layanan') . ' — ' . $jenisPengajuan;
 
@@ -79,11 +75,37 @@ class TicketService
                 'response_sla_status'   => 'pending',
                 'resolution_sla_status' => 'pending',
                 'sla_status'            => 'on_track',
-                'kategori_id'           => $data['kategori_id'],
+                'kategori_id'           => $kategoriId,
                 'pemohon_id'            => $pemohon->id,
                 'status'                => Ticket::STATUS_MENUNGGU,
-                'attachment'            => $attachmentPath,
+                'attachment'            => null,
             ]);
+
+            // Simpan multi-file attachments jika ada
+            if ($files) {
+                $fileList = is_array($files) ? $files : [$files];
+                $firstPath = null;
+
+                foreach ($fileList as $file) {
+                    if ($file instanceof UploadedFile) {
+                        $storedPath = $file->store('tiket-attachments', 'public');
+                        if (!$firstPath) {
+                            $firstPath = $storedPath;
+                        }
+
+                        $ticket->attachments()->create([
+                            'file_path' => $storedPath,
+                            'file_name' => $file->getClientOriginalName(),
+                            'file_size' => $file->getSize(),
+                            'mime_type' => $file->getMimeType(),
+                        ]);
+                    }
+                }
+
+                if ($firstPath) {
+                    $ticket->update(['attachment' => $firstPath]);
+                }
+            }
 
             $this->recordHistory(
                 $ticket,

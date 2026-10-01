@@ -47,7 +47,7 @@ class TicketViewUiRenderingTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Buat Tiket Layanan Baru');
         $response->assertSee($user->nama_lengkap);
-        $response->assertSee('Kategori Layanan');
+        $response->assertDontSee('Kategori Layanan');
 
         // Create a ticket
         $ticket = Ticket::create([
@@ -93,7 +93,6 @@ class TicketViewUiRenderingTest extends TestCase
         $response = $this->actingAs($operator)->get(route('tiket.show', $ticket));
         $response->assertStatus(200);
         $response->assertSee('Alokasikan ke Bagian');
-        $response->assertSee('Penyesuaian Klasifikasi & SLA');
     }
 
     public function test_kabag_views_detail_with_disposition_and_reject_panel(): void

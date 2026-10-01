@@ -354,7 +354,9 @@
             <div>
                 <span class="text-xs text-slate-400 block font-medium">Kategori Layanan</span>
                 <span class="font-semibold text-ink">{{ $tiket->kategori?->nama ?? '-' }}</span>
-                <span class="text-xs text-slate-500 block font-normal">{{ $tiket->kategori?->department?->nama ?? 'Umum' }}</span>
+                @if ($tiket->kategori?->department)
+                    <span class="text-xs text-slate-500 block font-normal">{{ $tiket->kategori->department->nama }}</span>
+                @endif
             </div>
 
             <div>
@@ -417,45 +419,106 @@
         @endif
 
         {{-- Lampiran Dokumen / Berkas --}}
-        @if ($tiket->attachment)
-            @php
-                $ext = strtolower(pathinfo($tiket->attachment, PATHINFO_EXTENSION));
-                $isImg = in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif']);
-                $fileName = basename($tiket->attachment);
-            @endphp
-            <div>
-                <span class="text-xs text-slate-400 block font-medium mb-2">Berkas / Dokumen Lampiran:</span>
-                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                    <div class="flex items-center gap-3 mb-3">
-                        <div class="w-10 h-10 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-[#114E84] flex-shrink-0">
-                            @include('partials.icon', ['name' => 'file-text', 'class' => 'w-5 h-5'])
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <p class="text-xs font-bold text-slate-800 truncate" title="{{ $fileName }}">
-                                {{ $fileName }}
-                            </p>
-                            <p class="text-[11px] text-slate-400 uppercase font-mono">{{ $ext ?: 'File' }} &bull; Lampiran Permohonan</p>
-                        </div>
-                    </div>
+        {{-- Lampiran Dokumen / Berkas --}}
+        @php
+            $hasMultiAttachments = $tiket->attachments && $tiket->attachments->isNotEmpty();
+            $hasSingleAttachment = !empty($tiket->attachment);
+        @endphp
 
-                    @if ($isImg)
-                        <div class="mb-3 rounded-lg overflow-hidden border border-slate-200 bg-white max-h-72 flex items-center justify-center">
-                            <img src="{{ route('tiket.attachment.view', $tiket) }}" alt="Pratinjau Lampiran" class="w-full h-auto object-contain max-h-72">
+        @if ($hasMultiAttachments || $hasSingleAttachment)
+            <div>
+                <div class="flex items-center justify-between mb-2.5">
+                    <span class="text-xs text-slate-400 font-medium">
+                        Berkas / Dokumen Lampiran 
+                        @if ($hasMultiAttachments)
+                            <span class="text-[#114E84] font-bold">({{ $tiket->attachments->count() }} berkas)</span>
+                        @endif
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    @if ($hasMultiAttachments)
+                        @foreach ($tiket->attachments as $att)
+                            @php
+                                $ext = strtolower(pathinfo($att->file_name, PATHINFO_EXTENSION));
+                                $isImg = $att->isImage();
+                            @endphp
+                            <div class="p-4 rounded-xl bg-slate-50/80 border border-slate-200 hover:border-blue-200 transition flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-start gap-3 mb-3">
+                                        <div class="w-10 h-10 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-[#114E84] flex-shrink-0">
+                                            @include('partials.icon', ['name' => $att->iconName(), 'class' => 'w-5 h-5'])
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-xs font-bold text-slate-800 truncate" title="{{ $att->file_name }}">
+                                                {{ $att->file_name }}
+                                            </p>
+                                            <p class="text-[11px] text-slate-400 uppercase font-mono mt-0.5">
+                                                {{ $ext ?: 'File' }} &bull; {{ $att->formattedSize() }}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    @if ($isImg)
+                                        <div class="mb-3 rounded-lg overflow-hidden border border-slate-200 bg-white max-h-56 flex items-center justify-center">
+                                            <img src="{{ route('tiket.attachment.file.view', [$tiket, $att]) }}" alt="Pratinjau {{ $att->file_name }}" class="w-full h-auto object-contain max-h-56">
+                                        </div>
+                                    @endif
+                                </div>
+
+                                <div class="flex items-center gap-2 pt-2 border-t border-slate-200/60 mt-auto">
+                                    <a href="{{ route('tiket.attachment.file.view', [$tiket, $att]) }}" target="_blank"
+                                       class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-blue-50 text-[#114E84] text-xs font-semibold transition border border-blue-200 shadow-2xs">
+                                        @include('partials.icon', ['name' => 'eye', 'class' => 'w-3.5 h-3.5'])
+                                        <span>Buka / Pratinjau</span>
+                                    </a>
+                                    <a href="{{ route('tiket.attachment.file.download', [$tiket, $att]) }}"
+                                       class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#114E84] hover:bg-[#0E4272] text-white text-xs font-semibold transition shadow-2xs">
+                                        @include('partials.icon', ['name' => 'download', 'class' => 'w-3.5 h-3.5 text-white'])
+                                        <span>Unduh Berkas</span>
+                                    </a>
+                                </div>
+                            </div>
+                        @endforeach
+                    @elseif ($hasSingleAttachment)
+                        @php
+                            $ext = strtolower(pathinfo($tiket->attachment, PATHINFO_EXTENSION));
+                            $isImg = in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif']);
+                            $fileName = basename($tiket->attachment);
+                        @endphp
+                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 md:col-span-2">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-10 h-10 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-[#114E84] flex-shrink-0">
+                                    @include('partials.icon', ['name' => 'file-text', 'class' => 'w-5 h-5'])
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-xs font-bold text-slate-800 truncate" title="{{ $fileName }}">
+                                        {{ $fileName }}
+                                    </p>
+                                    <p class="text-[11px] text-slate-400 uppercase font-mono">{{ $ext ?: 'File' }} &bull; Lampiran Permohonan</p>
+                                </div>
+                            </div>
+
+                            @if ($isImg)
+                                <div class="mb-3 rounded-lg overflow-hidden border border-slate-200 bg-white max-h-72 flex items-center justify-center">
+                                    <img src="{{ route('tiket.attachment.view', $tiket) }}" alt="Pratinjau Lampiran" class="w-full h-auto object-contain max-h-72">
+                                </div>
+                            @endif
+
+                            <div class="flex flex-wrap gap-2.5">
+                                <a href="{{ route('tiket.attachment.view', $tiket) }}" target="_blank"
+                                   class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-blue-50 text-[#114E84] text-xs font-semibold transition border border-blue-200 shadow-2xs">
+                                    @include('partials.icon', ['name' => 'eye', 'class' => 'w-4 h-4'])
+                                    <span>Buka Berkas</span>
+                                </a>
+                                <a href="{{ route('tiket.attachment.download', $tiket) }}"
+                                   class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#114E84] hover:bg-[#0E4272] text-white text-xs font-semibold transition shadow-2xs">
+                                    @include('partials.icon', ['name' => 'download', 'class' => 'w-4 h-4 text-white'])
+                                    <span>Unduh Berkas</span>
+                                </a>
+                            </div>
                         </div>
                     @endif
-
-                    <div class="flex flex-wrap gap-2.5">
-                        <a href="{{ route('tiket.attachment.view', $tiket) }}" target="_blank"
-                           class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-blue-50 text-[#114E84] text-xs font-semibold transition border border-blue-200 shadow-2xs">
-                            @include('partials.icon', ['name' => 'eye', 'class' => 'w-4 h-4'])
-                            <span>Buka Berkas</span>
-                        </a>
-                        <a href="{{ route('tiket.attachment.download', $tiket) }}"
-                           class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#114E84] hover:bg-[#0E4272] text-white text-xs font-semibold transition shadow-2xs">
-                            @include('partials.icon', ['name' => 'download', 'class' => 'w-4 h-4 text-white'])
-                            <span>Unduh Berkas</span>
-                        </a>
-                    </div>
                 </div>
             </div>
         @endif

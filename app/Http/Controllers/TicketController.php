@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Concerns\LogsAudit;
 use App\Models\InternalDepartment;
 use App\Models\Ticket;
+use App\Models\TicketAttachment;
 use App\Models\TicketCategory;
 use App\Models\User;
 use App\Services\TicketService;
@@ -97,12 +98,11 @@ class TicketController extends Controller
     {
         abort_unless(auth()->user()->isUser(), 403, 'Hanya pemohon yang dapat membuat tiket.');
 
-        $categories    = TicketCategory::active()->with('department')->orderBy('nama')->get();
         $departments   = InternalDepartment::orderBy('nama')->get();
         $jenisList     = Ticket::allJenisPengajuan();
         $prioritasList = Ticket::allPrioritas();
 
-        return view('tiket.buat', compact('categories', 'departments', 'jenisList', 'prioritasList'));
+        return view('tiket.buat', compact('departments', 'jenisList', 'prioritasList'));
     }
 
     public function store(Request $request)
@@ -110,17 +110,31 @@ class TicketController extends Controller
         abort_unless(auth()->user()->isUser(), 403);
 
         $data = $request->validate([
-            'deskripsi'       => 'required|string|max:5000',
+            'deskripsi'       => 'required|string|min:100|max:5000',
             'jenis_pengajuan' => 'required|in:Permintaan,Permasalahan',
             'prioritas'       => 'required|in:Rendah,Sedang,Tinggi,Kritis',
-            'kategori_id'     => 'required|exists:ticket_categories,id',
-            'attachment'      => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
+            'attachments'     => 'nullable|array|max:10',
+            'attachments.*'   => 'file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:10240',
+            'attachment'      => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:10240',
+        ], [
+            'deskripsi.required' => 'Deskripsi / uraian masalah wajib diisi.',
+            'deskripsi.min'      => 'Deskripsi / uraian masalah wajib diisi minimal 100 karakter.',
+            'deskripsi.max'      => 'Deskripsi / uraian masalah tidak boleh melebihi 5000 karakter.',
+            'attachments.*.max'  => 'Setiap berkas lampiran maksimal 10 MB.',
+            'attachments.*.mimes'=> 'Format berkas lampiran harus berupa PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, atau PNG.',
+            'attachment.max'     => 'Berkas lampiran maksimal 10 MB.',
+            'attachment.mimes'   => 'Format berkas lampiran harus berupa PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, atau PNG.',
         ]);
+
+        $files = $request->file('attachments') ?: [];
+        if ($request->hasFile('attachment')) {
+            $files[] = $request->file('attachment');
+        }
 
         $ticket = $this->ticketService->buatTiket(
             auth()->user(),
             $data,
-            $request->file('attachment')
+            $files
         );
 
         $this->audit('CREATE', 'Sistem Tiket', 'Ticket', $ticket->id, "Membuat tiket {$ticket->nomor_tiket}");
@@ -139,7 +153,7 @@ class TicketController extends Controller
         $visible = Ticket::visibleBy($user)->where('id', $tiket->id)->exists();
         abort_unless($visible, 403, 'Anda tidak memiliki akses ke tiket ini.');
 
-        $tiket->load(['pemohon', 'kategori', 'department', 'operator', 'kabag', 'assignedStaf', 'histories.user']);
+        $tiket->load(['pemohon', 'kategori', 'department', 'operator', 'kabag', 'assignedStaf', 'histories.user', 'attachments']);
 
         // Data untuk form aksi kabag: daftar staf di department yang sama (multi-user)
         $stafList = collect();
@@ -316,5 +330,33 @@ class TicketController extends Controller
         abort_unless(Storage::disk('public')->exists($tiket->attachment), 404, 'File lampiran tidak ditemukan.');
 
         return Storage::disk('public')->download($tiket->attachment, basename($tiket->attachment));
+    }
+
+    public function viewAttachmentFile(Ticket $tiket, TicketAttachment $attachment)
+    {
+        abort_unless($attachment->ticket_id === $tiket->id, 404);
+        $user = auth()->user();
+        $visible = Ticket::visibleBy($user)->where('id', $tiket->id)->exists();
+        abort_unless($visible, 403, 'Anda tidak memiliki akses ke lampiran tiket ini.');
+        abort_unless(Storage::disk('public')->exists($attachment->file_path), 404, 'Berkas tidak ditemukan.');
+
+        $path = Storage::disk('public')->path($attachment->file_path);
+        $mimeType = $attachment->mime_type ?: (Storage::disk('public')->mimeType($attachment->file_path) ?: 'application/octet-stream');
+
+        return response()->file($path, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . $attachment->file_name . '"',
+        ]);
+    }
+
+    public function downloadAttachmentFile(Ticket $tiket, TicketAttachment $attachment)
+    {
+        abort_unless($attachment->ticket_id === $tiket->id, 404);
+        $user = auth()->user();
+        $visible = Ticket::visibleBy($user)->where('id', $tiket->id)->exists();
+        abort_unless($visible, 403, 'Anda tidak memiliki akses ke lampiran tiket ini.');
+        abort_unless(Storage::disk('public')->exists($attachment->file_path), 404, 'Berkas tidak ditemukan.');
+
+        return Storage::disk('public')->download($attachment->file_path, $attachment->file_name);
     }
 }

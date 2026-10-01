@@ -40,8 +40,7 @@ class TicketTwoTierSlaLifecycleTest extends TestCase
 
         // 1. User membuat tiket dengan prioritas Tinggi
         $response = $this->actingAs($user1)->post(route('tiket.store'), [
-            'kategori_id'     => $category->id,
-            'deskripsi'       => 'Perbaikan atap ruang pertemuan bocor parah.',
+            'deskripsi'       => 'Perbaikan atap ruang pertemuan bocor parah dan memerlukan penanganan teknis segera agar fasilitas dapat digunakan kembali dengan aman.',
             'jenis_pengajuan' => 'Permasalahan',
             'prioritas'       => 'Tinggi',
         ]);

@@ -118,6 +118,11 @@ class Ticket extends Model
         return $this->hasMany(TicketHistory::class, 'ticket_id')->orderBy('id');
     }
 
+    public function attachments()
+    {
+        return $this->hasMany(TicketAttachment::class, 'ticket_id')->orderBy('id');
+    }
+
     // ── Scopes (pembatasan visibility) ──────────────────────────────────────
 
     /**
