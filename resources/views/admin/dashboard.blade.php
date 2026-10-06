@@ -24,30 +24,11 @@
             </span>
         </div>
         <h1 class="text-2xl sm:text-3xl font-extrabold text-ink tracking-tight">
-            {{ $greeting }}, {{ $firstName }} 👋
+            {{ $greeting }}, {{ $firstName }} 
         </h1>
         <p class="text-xs sm:text-sm text-slate-500 mt-1">
-            Pusat kendali administrasi sistem, pengawasan layanan tiket, manajemen pengguna, dan rekam jejak audit.
+            Pusat kendali sistem, tiket layanan, pengguna, dan jejak audit.
         </p>
-    </div>
-
-    {{-- Shortcuts / Quick Actions --}}
-    <div class="flex flex-wrap items-center gap-2">
-        <a href="{{ route('tiket.index') }}"
-           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#114E84] text-white hover:bg-[#0E4272] shadow-2xs transition">
-            @include('partials.icon', ['name' => 'inbox', 'class' => 'w-3.5 h-3.5 text-white'])
-            <span>Semua Tiket</span>
-        </a>
-        <a href="{{ route('admin.users.index') }}"
-           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-2xs transition">
-            @include('partials.icon', ['name' => 'users', 'class' => 'w-3.5 h-3.5 text-slate-500'])
-            <span>Kelola User</span>
-        </a>
-        <a href="{{ route('admin.audit-log.index') }}"
-           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-2xs transition">
-            @include('partials.icon', ['name' => 'activity', 'class' => 'w-3.5 h-3.5 text-slate-500'])
-            <span>Audit Log</span>
-        </a>
     </div>
 </div>
 
@@ -65,7 +46,7 @@
             </div>
             <p class="text-2xl sm:text-3xl font-extrabold text-ink tracking-tight">{{ $totalTiket }}</p>
         </div>
-        <p class="text-[11px] text-slate-400 mt-2 font-medium">Seluruh pengajuan tiket</p>
+        <p class="text-[11px] text-slate-400 mt-2 font-medium">Semua pengajuan</p>
     </a>
 
     {{-- Menunggu Verifikasi --}}
@@ -84,7 +65,7 @@
             @if ($menungguVerifikasi > 0)
                 <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
             @endif
-            <span>Perlu verifikasi operator</span>
+            <span>Perlu verifikasi</span>
         </div>
     </a>
 
@@ -100,7 +81,7 @@
             </div>
             <p class="text-2xl sm:text-3xl font-extrabold text-indigo-700 tracking-tight">{{ $dalamProses }}</p>
         </div>
-        <p class="text-[11px] text-slate-400 mt-2 font-medium">Sedang dikerjakan staf</p>
+        <p class="text-[11px] text-slate-400 mt-2 font-medium">Sedang dikerjakan</p>
     </a>
 
     {{-- Selesai Hari Ini --}}
@@ -131,16 +112,16 @@
         </div>
         <div class="flex items-center justify-between text-[11px] text-slate-400 mt-2">
             <span>{{ $inactiveUsers ?? 0 }} Nonaktif</span>
-            <span class="text-[#114E84] font-bold">Kelola &rarr;</span>
+            <span class="text-[#114E84] font-bold">Kelola User &rarr;</span>
         </div>
     </a>
 </div>
 
-{{-- ================= LOWER SECTION: 2 COLUMNS ================= --}}
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+{{-- ================= LOWER SECTION: VERTICAL STACK (ATAS-BAWAH) ================= --}}
+<div class="space-y-6">
 
-    {{-- LEFT COLUMN: Daftar Tiket Terbaru (7 cols) --}}
-    <div class="lg:col-span-7 bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+    {{-- ATAS: Daftar Tiket Terbaru (Full Width) --}}
+    <div class="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
         <div class="p-5 border-b border-slate-100 flex items-center justify-between">
             <div class="flex items-center gap-2.5">
                 <div class="w-8 h-8 rounded-lg bg-blue-50 text-[#114E84] flex items-center justify-center">
@@ -148,10 +129,10 @@
                 </div>
                 <div>
                     <h2 class="text-sm font-bold text-ink">Tiket Layanan Terbaru</h2>
-                    <p class="text-[11px] text-slate-400">Pengajuan tiket terkini yang masuk ke dalam sistem</p>
+                    <p class="text-[11px] text-slate-400">Pengajuan terbaru</p>
                 </div>
             </div>
-            <a href="{{ route('tiket.index') }}" class="text-xs font-semibold text-[#114E84] hover:underline flex items-center gap-1">
+            <a href="{{ route('tiket.index') }}" class="inline-flex items-center gap-1 text-xs font-semibold text-[#114E84] hover:text-[#0d3b64] transition">
                 <span>Lihat Semua</span>
                 @include('partials.icon', ['name' => 'chevron-right', 'class' => 'w-3 h-3'])
             </a>
@@ -161,39 +142,43 @@
             <table class="w-full text-xs text-left">
                 <thead class="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase tracking-wider font-semibold">
                     <tr>
-                        <th class="px-4 py-3">No. Tiket</th>
-                        <th class="px-4 py-3">Pemohon</th>
-                        <th class="px-4 py-3">Bagian</th>
-                        <th class="px-4 py-3">Status</th>
-                        <th class="px-4 py-3 text-right">Aksi</th>
+                        <th class="px-5 py-3.5">No. Tiket</th>
+                        <th class="px-5 py-3.5">Pemohon</th>
+                        <th class="px-5 py-3.5">Bagian Tujuan</th>
+                        <th class="px-5 py-3.5">Subjek / Uraian</th>
+                        <th class="px-5 py-3.5">Status</th>
+                        <th class="px-5 py-3.5 text-right">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-slate-700">
                     @forelse ($tiketTerbaru as $tiket)
                         <tr class="hover:bg-slate-50/70 transition">
-                            <td class="px-4 py-3.5 font-mono font-bold text-[#114E84] whitespace-nowrap">
+                            <td class="px-5 py-3.5 font-mono font-bold text-[#114E84] whitespace-nowrap">
                                 <a href="{{ route('tiket.show', $tiket) }}" class="hover:underline">
                                     {{ $tiket->nomor_tiket }}
                                 </a>
                                 <p class="text-[10px] text-slate-400 font-sans mt-0.5">{{ $tiket->created_at->format('d/m/Y H:i') }}</p>
                             </td>
-                            <td class="px-4 py-3.5">
+                            <td class="px-5 py-3.5">
                                 <div class="font-semibold text-ink">{{ $tiket->pemohon?->nama_lengkap ?? '-' }}</div>
                                 <div class="text-[11px] text-slate-400">{{ $tiket->pemohon?->bagian ?? '-' }}</div>
                             </td>
-                            <td class="px-4 py-3.5 whitespace-nowrap">
+                            <td class="px-5 py-3.5 whitespace-nowrap">
                                 <span class="text-slate-600 font-medium">
                                     {{ $tiket->department?->nama ?? 'Belum dialokasi' }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3.5 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold border {{ $tiket->statusBadgeClass() }}">
+                            <td class="px-5 py-3.5 max-w-xs sm:max-w-md truncate">
+                                <span class="font-medium text-ink">{{ $tiket->judul }}</span>
+                            </td>
+                            <td class="px-5 py-3.5 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold border {{ $tiket->statusBadgeClass() }}">
                                     {{ $tiket->status }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                            <td class="px-5 py-3.5 text-right whitespace-nowrap">
                                 <a href="{{ route('tiket.show', $tiket) }}"
-                                   class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition text-[11px]">
+                                   class="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition text-[11px]">
                                     @include('partials.icon', ['name' => 'eye', 'class' => 'w-3 h-3 text-slate-500'])
                                     <span>Detail</span>
                                 </a>
@@ -201,7 +186,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-4 py-8 text-center text-slate-400">
+                            <td colspan="6" class="px-5 py-8 text-center text-slate-400">
                                 Belum ada data tiket layanan.
                             </td>
                         </tr>
@@ -211,8 +196,8 @@
         </div>
     </div>
 
-    {{-- RIGHT COLUMN: Aktivitas Audit Log Terbaru (5 cols) --}}
-    <div class="lg:col-span-5 bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col justify-between">
+    {{-- BAWAH: Aktivitas Audit Log Terkini (Full Width) --}}
+    <div class="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col justify-between">
         <div>
             <div class="p-5 border-b border-slate-100 flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
@@ -221,29 +206,34 @@
                     </div>
                     <div>
                         <h2 class="text-sm font-bold text-ink">Aktivitas Audit Log Terkini</h2>
-                        <p class="text-[11px] text-slate-400">Jejak audit peristiwa sistem dan transaksi</p>
+                        <p class="text-[11px] text-slate-400">Jejak aktivitas sistem</p>
                     </div>
                 </div>
-                <a href="{{ route('admin.audit-log.index') }}" class="text-xs font-semibold text-[#114E84] hover:underline flex items-center gap-1">
+                <a href="{{ route('admin.audit-log.index') }}" class="inline-flex items-center gap-1 text-xs font-semibold text-[#114E84] hover:text-[#0d3b64] transition">
                     <span>Semua Log</span>
                     @include('partials.icon', ['name' => 'chevron-right', 'class' => 'w-3 h-3'])
                 </a>
             </div>
 
-            <div class="p-5 space-y-4">
+            <div class="p-5 divide-y divide-slate-100">
                 @forelse ($activities as $log)
-                    <div class="flex items-start gap-3 pb-3 border-b border-slate-100 last:border-0 last:pb-0">
-                        <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            @include('partials.icon', ['name' => 'shield', 'class' => 'w-3.5 h-3.5 text-slate-500'])
+                    <div class="flex items-start gap-4 py-3.5 first:pt-0 last:pb-0">
+                        <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            @include('partials.icon', ['name' => 'shield', 'class' => 'w-4 h-4 text-slate-500'])
                         </div>
                         <div class="min-w-0 flex-1">
-                            <div class="flex items-baseline justify-between gap-2">
-                                <p class="text-xs font-bold text-ink truncate">{{ $log->action }} &bull; {{ $log->module }}</p>
-                                <span class="text-[10px] text-slate-400 font-mono whitespace-nowrap">{{ $log->created_at->diffForHumans() }}</span>
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-xs font-bold text-ink">{{ $log->action }}</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                        {{ $log->module }}
+                                    </span>
+                                </div>
+                                <span class="text-[11px] text-slate-400 font-mono whitespace-nowrap">{{ $log->created_at->diffForHumans() }}</span>
                             </div>
-                            <p class="text-xs text-slate-600 mt-0.5 line-clamp-1">{{ $log->description ?? '-' }}</p>
-                            <p class="text-[11px] text-slate-400 mt-0.5">
-                                Oleh: <strong class="text-slate-700">{{ $log->user?->nama_lengkap ?? 'Sistem' }}</strong>
+                            <p class="text-xs text-slate-600 mt-1">{{ $log->description ?? '-' }}</p>
+                            <p class="text-[11px] text-slate-400 mt-1">
+                                Dilakukan oleh: <strong class="text-slate-700 font-medium">{{ $log->user?->nama_lengkap ?? 'Sistem' }}</strong>
                             </p>
                         </div>
                     </div>
@@ -257,9 +247,12 @@
 
         {{-- Footer shortcut --}}
         <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs">
-            <span class="text-slate-500">Integritas Audit: Hash-Chain SHA-256</span>
-            <a href="{{ route('admin.audit-log.index') }}" class="font-semibold text-[#114E84] hover:underline">
-                Buka Audit Trail &rarr;
+            <span class="text-slate-500 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                Integritas Audit: Hash-Chain SHA-256 Terverifikasi
+            </span>
+            <a href="{{ route('admin.audit-log.index') }}" class="text-[#114E84] font-semibold hover:underline">
+                Periksa Seluruh Riwayat &rarr;
             </a>
         </div>
     </div>

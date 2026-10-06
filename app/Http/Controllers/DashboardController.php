@@ -114,18 +114,38 @@ class DashboardController extends Controller
             ->where('response_due_at', '<', now())
             ->count();
 
-        // Breakdown per Bagian Tujuan
+        // Breakdown per Bagian Tujuan (Beban Kerja & Kepatuhan SLA)
         $depts = \App\Models\InternalDepartment::all();
         $deptTickets = [];
+        $totalOverdueCombined = 0;
         foreach ($depts as $d) {
+            $aktif = Ticket::where('department_id', $d->id)
+                ->whereIn('status', [Ticket::STATUS_DIALOKASIKAN, Ticket::STATUS_DALAM_PROSES])
+                ->count();
+            $selesai = Ticket::where('department_id', $d->id)
+                ->whereIn('status', [Ticket::STATUS_SELESAI, Ticket::STATUS_DITUTUP])
+                ->count();
+            $overdue = Ticket::where('department_id', $d->id)
+                ->whereNotIn('status', [Ticket::STATUS_SELESAI, Ticket::STATUS_DITUTUP, Ticket::STATUS_DITOLAK])
+                ->where(function ($q) {
+                    $q->where(fn($sub) => $sub->whereNotNull('resolution_due_at')->where('resolution_due_at', '<', now()))
+                      ->orWhere(fn($sub) => $sub->whereNotNull('response_due_at')->where('response_due_at', '<', now()))
+                      ->orWhere(fn($sub) => $sub->whereNotNull('sla_due_at')->where('sla_due_at', '<', now()));
+                })
+                ->count();
+
+            $totalOverdueCombined += $overdue;
+
             $deptTickets[] = [
                 'id'       => $d->id,
                 'nama'     => $d->nama,
                 'slug'     => $d->slug,
+                'aktif'    => $aktif,
+                'selesai'  => $selesai,
+                'overdue'  => $overdue,
                 'total'    => Ticket::where('department_id', $d->id)->count(),
                 'menunggu' => Ticket::where('department_id', $d->id)->where('status', Ticket::STATUS_DIALOKASIKAN)->count(),
                 'proses'   => Ticket::where('department_id', $d->id)->where('status', Ticket::STATUS_DALAM_PROSES)->count(),
-                'selesai'  => Ticket::where('department_id', $d->id)->whereIn('status', [Ticket::STATUS_SELESAI, Ticket::STATUS_DITUTUP])->count(),
             ];
         }
 
@@ -171,6 +191,7 @@ class DashboardController extends Controller
             'ditutup'              => Ticket::where('status', Ticket::STATUS_DITUTUP)->count(),
             'tiketOverdue'         => $tiketOverdue,
             'tiketOverdueResponse' => $tiketOverdueResponse,
+            'totalOverdueCombined' => $totalOverdueCombined,
             'deptTickets'          => $deptTickets,
             'operasional'          => $operasional,
             'tiketTerbaru'         => Ticket::with(['pemohon', 'department'])->latest()->take(8)->get(),

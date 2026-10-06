@@ -54,8 +54,42 @@
 
   ::selection { background: #0E1726; color: #D4A038; }
 
-  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
-    outline: 2px solid #D4A038; outline-offset: 2px; border-radius: 8px;
+  /* Accessibility focus-visible for links and buttons only */
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid rgba(17, 78, 132, 0.4); outline-offset: 2px; border-radius: 8px;
+  }
+
+  /* Form controls focus & hover consistency: single layer, clean brand blue */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  select,
+  textarea {
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out, background-color 0.15s ease-in-out;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]):hover,
+  select:hover,
+  textarea:hover {
+    border-color: #cbd5e1; /* slate-300 */
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]):focus,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]):focus-visible,
+  select:focus,
+  select:focus-visible,
+  textarea:focus,
+  textarea:focus-visible {
+    outline: none !important;
+    border-color: #114E84 !important;
+    box-shadow: 0 0 0 2px rgba(17, 78, 132, 0.15) !important;
+  }
+
+  /* Preserve error states if input is invalid */
+  input.border-rose-400:focus,
+  input.border-rose-500:focus,
+  textarea.border-rose-400:focus,
+  textarea.border-rose-500:focus {
+    border-color: #f43f5e !important;
+    box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.2) !important;
   }
 
   input[type="checkbox"], input[type="radio"] { accent-color: #0E1726; }

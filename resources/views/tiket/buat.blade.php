@@ -40,7 +40,7 @@
                 Jenis Pengajuan <span class="text-rose-500">*</span>
             </label>
             <select name="jenis_pengajuan" id="jenis_pengajuan" required
-                    class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#114E84] focus:ring-1 focus:ring-[#114E84] outline-none bg-white transition @error('jenis_pengajuan') border-rose-400 @enderror">
+                    class="w-full border border-slate-200 hover:border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#114E84] focus:ring-2 focus:ring-[#114E84]/15 outline-none bg-white transition @error('jenis_pengajuan') border-rose-400 @enderror">
                 <option value="" disabled {{ old('jenis_pengajuan') ? '' : 'selected' }}>— Pilih Jenis Pengajuan —</option>
                 <option value="Permintaan" {{ old('jenis_pengajuan') === 'Permintaan' ? 'selected' : '' }}>
                     Permintaan (Pengajuan Baru / Fasilitas)
@@ -60,7 +60,7 @@
                 Tingkat Prioritas <span class="text-rose-500">*</span>
             </label>
             <select name="prioritas" id="prioritas" required
-                    class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#114E84] focus:ring-1 focus:ring-[#114E84] outline-none bg-white transition @error('prioritas') border-rose-400 @enderror">
+                    class="w-full border border-slate-200 hover:border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#114E84] focus:ring-2 focus:ring-[#114E84]/15 outline-none bg-white transition @error('prioritas') border-rose-400 @enderror">
                 <option value="" disabled {{ old('prioritas') ? '' : 'selected' }}>— Pilih Tingkat Prioritas —</option>
                 <option value="Rendah" {{ old('prioritas') === 'Rendah' ? 'selected' : '' }}>Rendah (SLA 72 Jam)</option>
                 <option value="Sedang" {{ old('prioritas') === 'Sedang' ? 'selected' : '' }}>Sedang (SLA 48 Jam)</option>
@@ -85,7 +85,7 @@
         </div>
         <textarea name="deskripsi" id="deskripsi" rows="6" required minlength="100"
                   placeholder="Jelaskan kebutuhan, lokasi ruangan, kendala teknis, atau rincian permohonan secara jelas dan lengkap (wajib minimal 100 karakter)..."
-                  class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#114E84] focus:ring-1 focus:ring-[#114E84] outline-none transition resize-none @error('deskripsi') border-rose-400 @enderror">{{ old('deskripsi') }}</textarea>
+                  class="w-full border border-slate-200 hover:border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#114E84] focus:ring-2 focus:ring-[#114E84]/15 outline-none transition resize-none @error('deskripsi') border-rose-400 @enderror">{{ old('deskripsi') }}</textarea>
 
         <div id="deskripsi-error" class="hidden mt-1 text-xs text-rose-500 font-medium"></div>
 

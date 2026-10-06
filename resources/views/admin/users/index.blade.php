@@ -17,13 +17,9 @@
             <p class="text-xs text-slate-500 mt-0.5">Kelola akun, hak akses role, status keaktifan, dan kredensial login tanpa perlu akses database manual.</p>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ route('admin.roles.index') }}" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition shadow-2xs">
-                @include('partials.icon', ['name' => 'shield', 'class' => 'w-4 h-4 text-slate-500'])
-                <span>Kelola Role &amp; Hak Akses</span>
-            </a>
             <button type="button" onclick="openCreateUserModal()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#114E84] hover:bg-[#0E4272] text-white text-xs font-bold transition shadow-sm hover:shadow">
                 @include('partials.icon', ['name' => 'plus', 'class' => 'w-4 h-4'])
-                <span>+ Tambah User Baru</span>
+                <span> Tambah User Baru</span>
             </button>
         </div>
     </div>
@@ -82,18 +78,18 @@
                 <input type="text"
                        id="userSearchInput"
                        placeholder="Cari berdasarkan nama, username, email, atau jabatan..."
-                       class="w-full bg-white text-xs rounded-xl pl-9 pr-3 py-2.5 border border-slate-200 focus:border-[#114E84] focus:ring-1 focus:ring-[#114E84] text-slate-700 placeholder-slate-400 outline-none transition">
+                       class="w-full bg-white text-xs rounded-xl pl-9 pr-3 py-2.5 border border-slate-200 hover:border-slate-300 focus:border-[#114E84] focus:ring-2 focus:ring-[#114E84]/15 text-slate-700 placeholder-slate-400 outline-none transition">
             </div>
 
             <div class="flex items-center gap-2">
-                <select id="userRoleFilter" class="bg-white text-xs rounded-xl px-3 py-2.5 border border-slate-200 focus:border-[#114E84] text-slate-700 outline-none transition">
+                <select id="userRoleFilter" class="bg-white text-xs rounded-xl px-3 py-2.5 border border-slate-200 hover:border-slate-300 focus:border-[#114E84] focus:ring-2 focus:ring-[#114E84]/15 text-slate-700 outline-none transition">
                     <option value="">Semua Role ({{ $roles->count() }})</option>
                     @foreach ($roles as $r)
                         <option value="{{ $r->id }}">{{ $r->label }}</option>
                     @endforeach
                 </select>
 
-                <select id="userStatusFilter" class="bg-white text-xs rounded-xl px-3 py-2.5 border border-slate-200 focus:border-[#114E84] text-slate-700 outline-none transition">
+                <select id="userStatusFilter" class="bg-white text-xs rounded-xl px-3 py-2.5 border border-slate-200 hover:border-slate-300 focus:border-[#114E84] focus:ring-2 focus:ring-[#114E84]/15 text-slate-700 outline-none transition">
                     <option value="">Semua Status</option>
                     <option value="1">Aktif</option>
                     <option value="0">Non-Aktif</option>

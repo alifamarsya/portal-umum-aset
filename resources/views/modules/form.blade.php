@@ -24,9 +24,9 @@
 
                     @if (($meta['type'] ?? '') === 'textarea')
                         <textarea name="{{ $field }}" rows="3" {{ $isRequired ? 'required' : '' }}
-                            class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand transition">{{ old($field, $item?->$field) }}</textarea>
+                            class="w-full border border-slate-200 hover:border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#114E84] focus:ring-2 focus:ring-[#114E84]/15 outline-none transition">{{ old($field, $item?->$field) }}</textarea>
                     @elseif (($meta['type'] ?? '') === 'select' && !empty($meta['opts']))
-                        <select name="{{ $field }}" {{ $isRequired ? 'required' : '' }} class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm bg-white focus:border-brand focus:ring-1 focus:ring-brand transition">
+                        <select name="{{ $field }}" {{ $isRequired ? 'required' : '' }} class="w-full border border-slate-200 hover:border-slate-300 rounded-xl px-3.5 py-2.5 text-sm bg-white focus:border-[#114E84] focus:ring-2 focus:ring-[#114E84]/15 outline-none transition">
                             <option value="">— pilih —</option>
                             @foreach ($meta['opts'] as $opt)
                                 <option value="{{ $opt }}" @selected(old($field, $item?->$field) === $opt)>{{ $opt }}</option>
@@ -34,21 +34,21 @@
                         </select>
                     @elseif (($meta['type'] ?? '') === 'checkbox')
                         <label class="inline-flex items-center gap-2 mt-1">
-                            <input type="checkbox" name="{{ $field }}" value="1" @checked(old($field, $item?->$field)) class="rounded border-slate-300">
+                            <input type="checkbox" name="{{ $field }}" value="1" @checked(old($field, $item?->$field)) class="rounded border-slate-300 text-[#114E84] focus:ring-[#114E84]">
                             <span class="text-sm text-slate-500">Ya</span>
                         </label>
                     @elseif (($meta['type'] ?? '') === 'date')
                         <input type="date" name="{{ $field }}" value="{{ old($field, optional($item?->$field)->format('Y-m-d') ?? $item?->$field) }}"
                                {{ $isRequired ? 'required' : '' }}
-                               class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand transition">
+                               class="w-full border border-slate-200 hover:border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#114E84] focus:ring-2 focus:ring-[#114E84]/15 outline-none transition">
                     @elseif (in_array($meta['type'] ?? '', ['number', 'money']))
                         <input type="number" step="0.01" name="{{ $field }}" value="{{ old($field, $item?->$field) }}"
                                {{ $isRequired ? 'required' : '' }}
-                               class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm font-mono focus:border-brand focus:ring-1 focus:ring-brand transition">
+                               class="w-full border border-slate-200 hover:border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-mono focus:border-[#114E84] focus:ring-2 focus:ring-[#114E84]/15 outline-none transition">
                     @else
                         <input type="text" name="{{ $field }}" value="{{ old($field, $item?->$field) }}"
                                {{ $isRequired ? 'required' : '' }}
-                               class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand transition">
+                               class="w-full border border-slate-200 hover:border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#114E84] focus:ring-2 focus:ring-[#114E84]/15 outline-none transition">
                     @endif
 
                     @error($field)

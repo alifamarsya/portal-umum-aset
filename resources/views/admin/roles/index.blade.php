@@ -17,13 +17,9 @@
             <p class="text-xs text-slate-500 mt-0.5">Atur peran pengguna, tambah role kustom baru, dan kustomisasi matriks hak akses per modul secara dinamis.</p>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ route('admin.users.index') }}" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition shadow-2xs">
-                @include('partials.icon', ['name' => 'users', 'class' => 'w-4 h-4 text-slate-500'])
-                <span>Kelola Data User</span>
-            </a>
             <button type="button" onclick="openCreateRoleModal()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#114E84] hover:bg-[#0E4272] text-white text-xs font-bold transition shadow-sm hover:shadow">
                 @include('partials.icon', ['name' => 'plus', 'class' => 'w-4 h-4'])
-                <span>+ Tambah Role Baru</span>
+                <span> Tambah Role Baru</span>
             </button>
         </div>
     </div>

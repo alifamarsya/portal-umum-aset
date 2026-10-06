@@ -74,7 +74,7 @@
                             </label>
                             <div class="relative">
                                 <input type="password" name="password_lama" id="password_lama" autocomplete="current-password" required
-                                       class="w-full px-4 py-2.5 pr-11 rounded-xl border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#114E84]/30 focus:border-[#114E84] transition placeholder-slate-400 @error('password_lama') border-rose-400 bg-rose-50/50 @enderror"
+                                       class="w-full px-4 py-2.5 pr-11 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#114E84]/15 focus:border-[#114E84] transition placeholder-slate-400 @error('password_lama') border-rose-400 bg-rose-50/50 @enderror"
                                        placeholder="Masukkan kata sandi saat ini">
                                 <button type="button" onclick="togglePassword('password_lama', 'eye_lama')"
                                         class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
@@ -97,7 +97,7 @@
                             </label>
                             <div class="relative">
                                 <input type="password" name="password" id="password" autocomplete="new-password" required minlength="8"
-                                       class="w-full px-4 py-2.5 pr-11 rounded-xl border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#114E84]/30 focus:border-[#114E84] transition placeholder-slate-400 @error('password') border-rose-400 bg-rose-50/50 @enderror"
+                                       class="w-full px-4 py-2.5 pr-11 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#114E84]/15 focus:border-[#114E84] transition placeholder-slate-400 @error('password') border-rose-400 bg-rose-50/50 @enderror"
                                        placeholder="Minimal 8 karakter unik">
                                 <button type="button" onclick="togglePassword('password', 'eye_baru')"
                                         class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
@@ -132,7 +132,7 @@
                             </label>
                             <div class="relative">
                                 <input type="password" name="password_confirmation" id="password_confirmation" autocomplete="new-password" required
-                                       class="w-full px-4 py-2.5 pr-11 rounded-xl border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#114E84]/30 focus:border-[#114E84] transition placeholder-slate-400"
+                                       class="w-full px-4 py-2.5 pr-11 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#114E84]/15 focus:border-[#114E84] transition placeholder-slate-400"
                                        placeholder="Ulangi password baru yang sama">
                                 <button type="button" onclick="togglePassword('password_confirmation', 'eye_konfirm')"
                                         class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"

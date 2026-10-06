@@ -20,11 +20,11 @@
                 </label>
                 @if ($type === 'textarea')
                     <textarea name="{{ $field }}" rows="3" {{ $isRequired ? 'required' : '' }}
-                              class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand transition">{{ old($field, $item?->$field) }}</textarea>
+                              class="w-full border border-slate-200 hover:border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#114E84] focus:ring-2 focus:ring-[#114E84]/15 outline-none transition">{{ old($field, $item?->$field) }}</textarea>
                 @else
                     <input type="{{ $type }}" name="{{ $field }}" value="{{ old($field, $item?->$field) }}"
                            {{ $isRequired ? 'required' : '' }}
-                           class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand transition">
+                           class="w-full border border-slate-200 hover:border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#114E84] focus:ring-2 focus:ring-[#114E84]/15 outline-none transition">
                 @endif
                 @error($field)
                     <p class="text-[12px] text-rose-500 mt-1 font-medium">{{ $message }}</p>

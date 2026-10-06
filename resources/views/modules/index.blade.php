@@ -21,7 +21,7 @@
                 @include('partials.icon', ['name' => 'search', 'class' => 'w-4 h-4'])
             </span>
             <input type="text" name="q" value="{{ request('q') }}" placeholder="Cari data..."
-                   class="border border-slate-300 rounded-lg pl-9 pr-3.5 py-2 text-sm w-full bg-white focus:border-brand focus:ring-1 focus:ring-brand transition">
+                   class="border border-slate-200 hover:border-slate-300 rounded-xl pl-9 pr-3.5 py-2 text-sm w-full bg-white focus:border-[#114E84] focus:ring-2 focus:ring-[#114E84]/15 outline-none transition">
         </div>
     </form>
 
