@@ -133,195 +133,358 @@
 <div class="space-y-6">
 
     {{-- ========================================================================= --}}
-    {{-- 1. CARD SLA RESPONSE TIME (Maksimal 2 Jam Kerja Operator)                 --}}
+    {{-- WIDGET SLA: Response & Resolution — circular clock timer (desain portum) --}}
     {{-- ========================================================================= --}}
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs p-6 overflow-hidden relative">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl {{ $isResponseBreached ? 'bg-rose-100 text-rose-700' : ($isResponseWarning ? 'bg-amber-100 text-amber-700' : ($isResponded ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-[#114E84]')) }} flex items-center justify-center flex-shrink-0">
-                    @include('partials.icon', ['name' => 'clock', 'class' => 'w-5 h-5'])
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h3 class="text-sm font-bold text-ink">SLA Response Time (Verifikasi Operator)</h3>
-                        <span class="px-2 py-0.5 rounded-full text-[10.5px] font-bold border {{ $tiket->responseSlaBadgeClass() }}">
-                            {{ $tiket->responseSlaText() }}
-                        </span>
+    @php
+        // ── Adapter: petakan data portal-umum-aset ke struktur card referensi ──
+        $sla = [
+            'percentage_used'     => $responsePercent,
+            'is_overdue'          => $isResponseBreached,
+            'is_warning'          => $isResponseWarning,
+            'badge_class'         => $tiket->responseSlaBadgeClass(),
+            'status'              => $tiket->responseSlaText(),
+            'is_verified'         => $isResponded,
+            'is_waiting_start'    => false,
+            'start_at'            => $responseStart,
+            'due_at'              => $responseDue,
+            'remaining_formatted' => $responseRemainingText,
+            'elapsed_formatted'   => $responseElapsedFormatted,
+        ];
+        $slaRes = [
+            'percentage_used'     => $resolutionPercent,
+            'is_overdue'          => $isResolutionBreached,
+            'is_warning'          => $isResolutionWarning,
+            'badge_class'         => $tiket->resolutionSlaBadgeClass(),
+            'status'              => $tiket->resolutionSlaText(),
+            'is_started'          => $isResolutionStarted,
+            'is_resolved'         => $isResolved,
+            'is_waiting_start'    => false,
+            'start_at'            => $tiket->resolution_started_at,
+            'due_at'              => $tiket->resolution_due_at,
+            'remaining_formatted' => $resolutionRemainingText,
+            'elapsed_formatted'   => $resolutionElapsedFormatted,
+            'target_hours'        => $resolutionHours,
+        ];
+
+        // Perhitungan circular clock: 2 * pi * 44
+        $slaCircumference = 276.46;
+
+        $slaPct = min(max((float) ($sla['percentage_used'] ?? 0), 0), 100);
+        $slaOffset = $slaCircumference * (1 - ($slaPct / 100));
+        $slaStroke = $sla['is_overdue'] ? '#f43f5e' : ($sla['is_warning'] ? '#f59e0b' : '#10b981');
+
+        $slaResPct = min(max((float) ($slaRes['percentage_used'] ?? 0), 0), 100);
+        $slaResOffset = $slaCircumference * (1 - ($slaResPct / 100));
+        $slaResStroke = $slaRes['is_overdue'] ? '#f43f5e' : ($slaRes['is_warning'] ? '#f59e0b' : '#10b981');
+    @endphp
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {{-- 1. CARD SLA RESPONSE TIME (Operator) --}}
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex flex-col justify-between relative overflow-hidden">
+            <div>
+                {{-- Header Card --}}
+                <div class="flex items-start justify-between gap-3 pb-3 mb-4 border-b border-slate-100">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-sm font-bold text-ink">SLA Response Time</h3>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border {{ $sla['badge_class'] }}">
+                                {{ $sla['status'] }}
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Verifikasi Operator &bull; Maks. 2 Jam Kerja</p>
                     </div>
-                    <p class="text-xs text-slate-400 mt-0.5">
-                        Target respon verifikasi: <strong>maksimal 2 jam kerja</strong> (08:00 - 17:00 WITA, Senin - Jumat)
-                    </p>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        @if ($sla['is_verified'])
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                @include('partials.icon', ['name' => 'check-circle', 'class' => 'w-3 h-3 text-emerald-600'])
+                                Telah Diverifikasi
+                            </span>
+                        @elseif ($sla['is_waiting_start'] ?? false)
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                Menunggu Jam Kerja
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span>
+                                Berjalan
+                            </span>
+                        @endif
+
+                        @if ($user->isOperator() && $tiket->status === 'Menunggu Verifikasi')
+                            <a href="#panel-alokasi"
+                               class="inline-flex items-center gap-1 bg-[#114E84] hover:bg-[#0E4272] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-xs transition">
+                                @include('partials.icon', ['name' => 'check-circle', 'class' => 'w-3 h-3 text-white'])
+                                Verifikasi &rarr;
+                            </a>
+                        @endif
+                    </div>
                 </div>
+
+                {{-- Body: Menunggu Jam Kerja vs Circular Timer --}}
+                @if ($sla['is_waiting_start'] ?? false)
+                    <div class="flex items-center gap-4 p-3.5 bg-amber-50/60 rounded-xl border border-amber-200/80 my-2">
+                        <div class="w-16 h-16 rounded-full border-2 border-dashed border-amber-300 flex items-center justify-center flex-shrink-0 bg-white text-amber-600 font-bold text-xs">
+                            2j
+                        </div>
+                        <div class="text-xs text-amber-900 leading-relaxed">
+                            <p class="font-bold">Timer Belum Dimulai</p>
+                            <p class="text-[11px] text-amber-700 mt-0.5">
+                                Berjalan otomatis saat jam kerja pada <strong>{{ $sla['start_at']->translatedFormat('l, d M Y - H:i') }} WITA</strong>. Target: 2 Jam Kerja Operator.
+                            </p>
+                        </div>
+                    </div>
+                @else
+                    {{-- Circular Timer & Center Metrics --}}
+                    <div class="flex flex-col sm:flex-row items-center gap-5 my-2">
+                        {{-- Circular Clock SVG --}}
+                        <div class="relative w-28 h-28 flex-shrink-0 flex items-center justify-center">
+                            <svg class="w-28 h-28 transform -rotate-90 origin-center" viewBox="0 0 100 100">
+                                {{-- Background Track --}}
+                                <circle cx="50" cy="50" r="44" stroke="#f1f5f9" stroke-width="7" fill="none" />
+                                {{-- Progress Arc --}}
+                                <circle cx="50" cy="50" r="44" stroke="{{ $slaStroke }}" stroke-width="7" stroke-linecap="round" fill="none"
+                                        stroke-dasharray="{{ $slaCircumference }}"
+                                        stroke-dashoffset="{{ $slaOffset }}"
+                                        class="transition-all duration-700 ease-out" />
+                            </svg>
+                            {{-- Text in Center of Circle --}}
+                            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                                @if ($sla['is_verified'])
+                                    <div class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-0.5">
+                                        @include('partials.icon', ['name' => 'check', 'class' => 'w-4 h-4 text-emerald-600', 'stroke' => 2.5])
+                                    </div>
+                                    <span class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Selesai</span>
+                                @else
+                                    <span class="text-xl font-black {{ $sla['is_overdue'] ? 'text-rose-600' : ($sla['is_warning'] ? 'text-amber-600' : 'text-slate-800') }} leading-none tracking-tight">
+                                        {{ $slaPct }}%
+                                    </span>
+                                    <span class="text-[9.5px] font-semibold mt-1 uppercase tracking-wider {{ $sla['is_overdue'] ? 'text-rose-500' : ($sla['is_warning'] ? 'text-amber-600' : 'text-slate-400') }}">
+                                        {{ $sla['is_overdue'] ? 'Overdue' : 'Terpakai' }}
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Summary Metrics --}}
+                        <div class="flex-1 w-full space-y-2.5 text-xs">
+                            {{-- Status / Sisa Waktu Highlight Pill --}}
+                            <div class="px-3 py-2 rounded-xl flex items-center justify-between {{ $sla['is_verified'] ? 'bg-emerald-50/80 border border-emerald-200 text-emerald-900' : ($sla['is_overdue'] ? 'bg-rose-50 border border-rose-200 text-rose-900' : ($sla['is_warning'] ? 'bg-amber-50 border border-amber-200 text-amber-900' : 'bg-slate-50 border border-slate-200 text-slate-800')) }}">
+                                <div class="flex items-center gap-1.5 font-medium text-[11px]">
+                                    @if ($sla['is_verified'])
+                                        @include('partials.icon', ['name' => 'check-circle', 'class' => 'w-3.5 h-3.5 text-emerald-600'])
+                                        <span>Status:</span>
+                                    @elseif ($sla['is_overdue'])
+                                        <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                                        <span class="text-rose-700 font-semibold">Keterlambatan:</span>
+                                    @elseif ($sla['is_warning'])
+                                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                                        <span class="text-amber-700 font-semibold">Sisa Waktu:</span>
+                                    @else
+                                        @include('partials.icon', ['name' => 'clock', 'class' => 'w-3.5 h-3.5 text-slate-500'])
+                                        <span>Sisa Waktu:</span>
+                                    @endif
+                                </div>
+                                <span class="font-bold text-xs">
+                                    @if ($sla['is_verified'])
+                                        {{ $sla['status'] }}
+                                    @else
+                                        {{ $sla['remaining_formatted'] }}
+                                    @endif
+                                </span>
+                            </div>
+
+                            {{-- Details --}}
+                            <div class="space-y-1.5 text-slate-600">
+                                <div class="flex justify-between py-0.5 border-b border-slate-100">
+                                    <span class="text-slate-400">Mulai:</span>
+                                    <span class="font-semibold text-slate-700 font-mono">{{ $sla['start_at']->format('d M, H:i') }}</span>
+                                </div>
+                                <div class="flex justify-between py-0.5 border-b border-slate-100">
+                                    <span class="text-slate-400">Batas Waktu:</span>
+                                    <span class="font-semibold {{ $sla['is_overdue'] ? 'text-rose-600' : 'text-slate-700' }} font-mono">{{ $sla['due_at']->format('d M, H:i') }}</span>
+                                </div>
+                                <div class="flex justify-between py-0.5">
+                                    <span class="text-slate-400">Terpakai:</span>
+                                    <span class="font-bold text-slate-800">{{ $sla['elapsed_formatted'] }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
             </div>
 
-            @if ($user->isOperator() && $tiket->status === 'Menunggu Verifikasi')
-                <a href="#panel-alokasi"
-                   class="inline-flex items-center gap-1.5 bg-[#114E84] hover:bg-[#0E4272] text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-2xs transition flex-shrink-0">
-                    @include('partials.icon', ['name' => 'check-circle', 'class' => 'w-3.5 h-3.5 text-white'])
-                    <span>Verifikasi Sekarang &rarr;</span>
-                </a>
+            @if ($sla['is_verified'] && $tiket->responded_at)
+                <div class="mt-3 pt-2.5 border-t border-slate-100 text-[11px] text-slate-500 flex items-center gap-1.5">
+                    @include('partials.icon', ['name' => 'check-circle', 'class' => 'w-3.5 h-3.5 text-emerald-600 flex-shrink-0'])
+                    <span class="truncate">Diverifikasi oleh {{ $tiket->operator->nama_lengkap ?? 'Operator' }} &bull; {{ $tiket->responded_at->format('d M Y, H:i') }} WITA</span>
+                </div>
             @endif
         </div>
 
-        {{-- Progress Bar --}}
-        <div class="mb-4">
-            <div class="flex items-center justify-between text-xs mb-1.5">
-                <span class="text-slate-500 font-medium">Penggunaan Kuota Waktu SLA</span>
-                <span class="font-bold {{ $isResponseBreached ? 'text-rose-600' : ($isResponseWarning ? 'text-amber-600' : 'text-slate-700') }}">
-                    {{ $responseElapsedFormatted }} / 2 jam ({{ $responsePercent }}%)
-                </span>
-            </div>
-            <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                <div class="h-full rounded-full transition-all duration-500 {{ $isResponseBreached ? 'bg-rose-500' : ($isResponseWarning ? 'bg-amber-500' : 'bg-[#114E84]') }}"
-                     style="width: {{ $responsePercent }}%"></div>
-            </div>
-        </div>
-
-        {{-- Key SLA Metrics Grid --}}
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
+        {{-- 2. CARD SLA RESOLUTION TIME (Bagian) --}}
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex flex-col justify-between relative overflow-hidden">
             <div>
-                <span class="text-slate-400 block font-medium">SLA Mulai Dihitung</span>
-                <span class="font-semibold text-slate-700 font-mono">{{ $responseStart->format('d M, H:i') }} WITA</span>
-            </div>
-            <div>
-                <span class="text-slate-400 block font-medium">Batas Waktu (Due)</span>
-                <span class="font-semibold {{ $isResponseBreached ? 'text-rose-700 font-bold' : 'text-slate-700' }} font-mono">
-                    {{ $responseDue ? $responseDue->format('d M, H:i') . ' WITA' : '—' }}
-                </span>
-            </div>
-            <div>
-                <span class="text-slate-400 block font-medium">Waktu Terpakai</span>
-                <span class="font-bold text-slate-800">{{ $responseElapsedFormatted }}</span>
-            </div>
-            <div>
-                <span class="text-slate-400 block font-medium">{{ $isResponded ? 'Hasil Evaluasi' : 'Sisa Waktu' }}</span>
-                <span class="font-bold {{ $isResponseBreached ? 'text-rose-600' : ($isResponseWarning ? 'text-amber-600' : 'text-emerald-700') }}">
-                    {{ $responseRemainingText }}
-                </span>
-            </div>
-        </div>
-
-        @if ($isResponded && $tiket->operator)
-            <div class="mt-3 text-[11px] text-slate-500 flex items-center gap-1.5">
-                @include('partials.icon', ['name' => 'check-circle', 'class' => 'w-3.5 h-3.5 text-emerald-600'])
-                <span>Diverifikasi oleh <strong>{{ $tiket->operator->nama_lengkap }}</strong> pada {{ $tiket->responded_at->format('d M Y, H:i') }} WITA.</span>
-            </div>
-        @endif
-    </div>
-
-    {{-- ========================================================================= --}}
-    {{-- 2. CARD SLA RESOLUTION TIME (Waktu Penyelesaian Penanganan Tiket)        --}}
-    {{-- ========================================================================= --}}
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs p-6 overflow-hidden relative">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl {{ $isResolutionBreached ? 'bg-rose-100 text-rose-700' : ($isResolutionWarning ? 'bg-amber-100 text-amber-700' : ($isResolved ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-[#114E84]')) }} flex items-center justify-center flex-shrink-0">
-                    @include('partials.icon', ['name' => 'clock', 'class' => 'w-5 h-5'])
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h3 class="text-sm font-bold text-ink">SLA Resolution Time (Penyelesaian Tiket)</h3>
-                        <span class="px-2 py-0.5 rounded-full text-[10.5px] font-bold border {{ $tiket->resolutionSlaBadgeClass() }}">
-                            {{ $tiket->resolutionSlaText() }}
-                        </span>
+                {{-- Header Card --}}
+                <div class="flex items-start justify-between gap-3 pb-3 mb-4 border-b border-slate-100">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-sm font-bold text-ink">SLA Resolution Time</h3>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border {{ $slaRes['badge_class'] }}">
+                                {{ $slaRes['status'] }}
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-0.5">
+                            Target: <strong>{{ $slaRes['target_hours'] }} Jam</strong> &bull; Prioritas: <strong>{{ $tiket->prioritas ?? 'Sedang' }}</strong>
+                        </p>
                     </div>
-                    <p class="text-xs text-slate-400 mt-0.5">
-                        Target Resolusi: <strong>{{ $resolutionHours }} Jam Kerja</strong> &bull; Prioritas: <strong>{{ $tiket->prioritas ?? 'Sedang' }}</strong> (Kritis 4j, Tinggi 12j, Sedang 48j, Rendah 72j)
-                    </p>
+                    @if (!$slaRes['is_started'])
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 flex-shrink-0">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                            Menunggu Persetujuan Kabag
+                        </span>
+                    @elseif ($slaRes['is_resolved'])
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex-shrink-0">
+                            @include('partials.icon', ['name' => 'check-circle', 'class' => 'w-3 h-3 text-emerald-600'])
+                            Telah Selesai
+                        </span>
+                    @elseif ($slaRes['is_waiting_start'] ?? false)
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 flex-shrink-0">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                            Menunggu Jam Kerja
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold bg-blue-50 text-blue-800 border border-blue-200 flex-shrink-0">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span>
+                            Berjalan
+                        </span>
+                    @endif
                 </div>
+
+                {{-- Circular Timer & Center Metrics --}}
+                @if ($slaRes['is_started'] && !($slaRes['is_waiting_start'] ?? false))
+                    <div class="flex flex-col sm:flex-row items-center gap-5 my-2">
+                        {{-- Circular Clock SVG --}}
+                        <div class="relative w-28 h-28 flex-shrink-0 flex items-center justify-center">
+                            <svg class="w-28 h-28 transform -rotate-90 origin-center" viewBox="0 0 100 100">
+                                {{-- Background Track --}}
+                                <circle cx="50" cy="50" r="44" stroke="#f1f5f9" stroke-width="7" fill="none" />
+                                {{-- Progress Arc --}}
+                                <circle cx="50" cy="50" r="44" stroke="{{ $slaResStroke }}" stroke-width="7" stroke-linecap="round" fill="none"
+                                        stroke-dasharray="{{ $slaCircumference }}"
+                                        stroke-dashoffset="{{ $slaResOffset }}"
+                                        class="transition-all duration-700 ease-out" />
+                            </svg>
+                            {{-- Text in Center of Circle --}}
+                            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                                @if ($slaRes['is_resolved'])
+                                    <div class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-0.5">
+                                        @include('partials.icon', ['name' => 'check', 'class' => 'w-4 h-4 text-emerald-600', 'stroke' => 2.5])
+                                    </div>
+                                    <span class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Selesai</span>
+                                @else
+                                    <span class="text-xl font-black {{ $slaRes['is_overdue'] ? 'text-rose-600' : ($slaRes['is_warning'] ? 'text-amber-600' : 'text-slate-800') }} leading-none tracking-tight">
+                                        {{ $slaResPct }}%
+                                    </span>
+                                    <span class="text-[9.5px] font-semibold mt-1 uppercase tracking-wider {{ $slaRes['is_overdue'] ? 'text-rose-500' : ($slaRes['is_warning'] ? 'text-amber-600' : 'text-slate-400') }}">
+                                        {{ $slaRes['is_overdue'] ? 'Overdue' : 'Terpakai' }}
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Summary Metrics --}}
+                        <div class="flex-1 w-full space-y-2.5 text-xs">
+                            {{-- Status / Sisa Waktu Highlight Pill --}}
+                            <div class="px-3 py-2 rounded-xl flex items-center justify-between {{ $slaRes['is_resolved'] ? 'bg-emerald-50/80 border border-emerald-200 text-emerald-900' : ($slaRes['is_overdue'] ? 'bg-rose-50 border border-rose-200 text-rose-900' : ($slaRes['is_warning'] ? 'bg-amber-50 border border-amber-200 text-amber-900' : 'bg-slate-50 border border-slate-200 text-slate-800')) }}">
+                                <div class="flex items-center gap-1.5 font-medium text-[11px]">
+                                    @if ($slaRes['is_resolved'])
+                                        @include('partials.icon', ['name' => 'check-circle', 'class' => 'w-3.5 h-3.5 text-emerald-600'])
+                                        <span>Status:</span>
+                                    @elseif ($slaRes['is_overdue'])
+                                        <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                                        <span class="text-rose-700 font-semibold">Keterlambatan:</span>
+                                    @elseif ($slaRes['is_warning'])
+                                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                                        <span class="text-amber-700 font-semibold">Sisa Waktu:</span>
+                                    @else
+                                        @include('partials.icon', ['name' => 'clock', 'class' => 'w-3.5 h-3.5 text-slate-500'])
+                                        <span>Sisa Waktu:</span>
+                                    @endif
+                                </div>
+                                <span class="font-bold text-xs">
+                                    @if ($slaRes['is_resolved'])
+                                        {{ $slaRes['status'] }}
+                                    @else
+                                        {{ $slaRes['remaining_formatted'] }}
+                                    @endif
+                                </span>
+                            </div>
+
+                            {{-- Details --}}
+                            <div class="space-y-1.5 text-slate-600">
+                                <div class="flex justify-between py-0.5 border-b border-slate-100">
+                                    <span class="text-slate-400">Mulai:</span>
+                                    <span class="font-semibold text-slate-700 font-mono">{{ $slaRes['start_at'] ? $slaRes['start_at']->format('d M, H:i') : '-' }}</span>
+                                </div>
+                                <div class="flex justify-between py-0.5 border-b border-slate-100">
+                                    <span class="text-slate-400">Batas Waktu:</span>
+                                    <span class="font-semibold {{ $slaRes['is_overdue'] ? 'text-rose-600' : 'text-slate-700' }} font-mono">{{ $slaRes['due_at'] ? $slaRes['due_at']->format('d M, H:i') : '-' }}</span>
+                                </div>
+                                <div class="flex justify-between py-0.5">
+                                    <span class="text-slate-400">Terpakai:</span>
+                                    <span class="font-bold text-slate-800">{{ $slaRes['elapsed_formatted'] }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @elseif ($slaRes['is_waiting_start'] ?? false)
+                    <div class="flex items-center gap-4 p-3.5 bg-amber-50/60 rounded-xl border border-amber-200/80 my-2">
+                        <div class="w-16 h-16 rounded-full border-2 border-dashed border-amber-300 flex items-center justify-center flex-shrink-0 bg-white text-amber-600 font-bold text-xs">
+                            {{ $slaRes['target_hours'] }}j
+                        </div>
+                        <div class="text-xs text-amber-900 leading-relaxed">
+                            <p class="font-bold">Timer Belum Dimulai</p>
+                            <p class="text-[11px] text-amber-700 mt-0.5">
+                                Berjalan otomatis saat jam kerja pada <strong>{{ $slaRes['start_at'] ? $slaRes['start_at']->translatedFormat('l, d M Y - H:i') : '-' }} WITA</strong>. Target: {{ $slaRes['target_hours'] }} Jam Kerja.
+                            </p>
+                        </div>
+                    </div>
+                @else
+                    <div class="flex items-center gap-4 p-3.5 bg-amber-50/60 rounded-xl border border-amber-200/80 my-2">
+                        <div class="w-16 h-16 rounded-full border-2 border-dashed border-amber-300 flex items-center justify-center flex-shrink-0 bg-white text-amber-600 font-bold text-xs">
+                            {{ $slaRes['target_hours'] }}j
+                        </div>
+                        <div class="text-xs text-amber-900 leading-relaxed">
+                            <p class="font-bold">Timer Belum Dimulai</p>
+                            <p class="text-[11px] text-amber-700 mt-0.5">
+                                Timer akan mulai berjalan otomatis saat Kepala Bagian <strong>{{ $tiket->department?->nama ?? 'Terkait' }}</strong> menyetujui tiket ini. Target: {{ $slaRes['target_hours'] }} Jam Kerja.
+                            </p>
+                        </div>
+                    </div>
+                @endif
             </div>
 
-            @if (!$isResolutionStarted)
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                    <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                    <span>Menunggu Persetujuan Kabag</span>
-                </span>
-            @elseif ($isResolved)
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                    @include('partials.icon', ['name' => 'check-circle', 'class' => 'w-3.5 h-3.5 text-emerald-600'])
-                    <span>Telah Diselesaikan</span>
-                </span>
-            @else
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-[#114E84] border border-blue-200">
-                    <span class="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
-                    <span>Timer Sedang Berjalan</span>
-                </span>
+            @if ($tiket->kategori_pekerjaan || $tiket->skala_eselonisasi || $tiket->estimasi_biaya)
+                <div class="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap gap-1.5 text-[10px]">
+                    @if ($tiket->kategori_pekerjaan)
+                        <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                            Kategori: {{ $tiket->kategori_pekerjaan }}
+                        </span>
+                    @endif
+                    @if ($tiket->skala_eselonisasi)
+                        <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                            Skala: {{ $tiket->skala_eselonisasi }}
+                        </span>
+                    @endif
+                    @if ($tiket->estimasi_biaya)
+                        <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
+                            Biaya: Rp {{ number_format($tiket->estimasi_biaya, 0, ',', '.') }}
+                        </span>
+                    @endif
+                </div>
             @endif
         </div>
-
-        {{-- Progress Bar --}}
-        @if ($isResolutionStarted)
-            <div class="mb-4">
-                <div class="flex items-center justify-between text-xs mb-1.5">
-                    <span class="text-slate-500 font-medium">Penggunaan Kuota Waktu SLA Resolusi</span>
-                    <span class="font-bold {{ $isResolutionBreached ? 'text-rose-600' : ($isResolutionWarning ? 'text-amber-600' : 'text-slate-700') }}">
-                        {{ $resolutionElapsedFormatted }} / {{ $resolutionHours }} jam ({{ $resolutionPercent }}%)
-                    </span>
-                </div>
-                <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div class="h-full rounded-full transition-all duration-500 {{ $isResolutionBreached ? 'bg-rose-500' : ($isResolutionWarning ? 'bg-amber-500' : 'bg-emerald-500') }}"
-                         style="width: {{ $resolutionPercent }}%"></div>
-                </div>
-            </div>
-
-            {{-- Key SLA Metrics Grid --}}
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
-                <div>
-                    <span class="text-slate-400 block font-medium">Mulai (Disetujui Kabag)</span>
-                    <span class="font-semibold text-slate-700 font-mono">
-                        {{ $tiket->resolution_started_at ? $tiket->resolution_started_at->format('d M, H:i') . ' WITA' : '-' }}
-                    </span>
-                </div>
-                <div>
-                    <span class="text-slate-400 block font-medium">Batas Waktu (Due)</span>
-                    <span class="font-semibold {{ $isResolutionBreached ? 'text-rose-700 font-bold' : 'text-slate-700' }} font-mono">
-                        {{ $tiket->resolution_due_at ? $tiket->resolution_due_at->format('d M, H:i') . ' WITA' : '-' }}
-                    </span>
-                </div>
-                <div>
-                    <span class="text-slate-400 block font-medium">Waktu Terpakai</span>
-                    <span class="font-bold text-slate-800">{{ $resolutionElapsedFormatted }}</span>
-                </div>
-                <div>
-                    <span class="text-slate-400 block font-medium">{{ $isResolved ? 'Hasil Evaluasi' : 'Sisa Waktu' }}</span>
-                    <span class="font-bold {{ $isResolutionBreached ? 'text-rose-600' : ($isResolutionWarning ? 'text-amber-600' : 'text-emerald-700') }}">
-                        {{ $resolutionRemainingText }}
-                    </span>
-                </div>
-            </div>
-        @else
-            <div class="p-4 bg-amber-50/70 rounded-xl border border-amber-200 text-xs text-amber-900 leading-relaxed">
-                <div class="flex items-center gap-2 font-bold mb-1 text-amber-900">
-                    @include('partials.icon', ['name' => 'info', 'class' => 'w-4 h-4 text-amber-600'])
-                    <span>Timer SLA Resolution belum dimulai</span>
-                </div>
-                <p class="text-amber-800">
-                    Timer akan mulai berjalan otomatis secara resmi saat Kepala Bagian <strong>{{ $tiket->department?->nama ?? 'Terkait' }}</strong> menyetujui tiket ini dan menugaskannya kepada staf pelaksana.
-                </p>
-            </div>
-        @endif
-
-        {{-- Parameter Durasi / Biaya jika ada --}}
-        @if ($tiket->kategori_pekerjaan || $tiket->skala_eselonisasi || $tiket->estimasi_biaya)
-            <div class="mt-3.5 pt-3 border-t border-slate-100 flex flex-wrap gap-2 text-[11px] items-center">
-                <span class="text-slate-400 font-semibold uppercase text-[10px]">Parameter Durasi:</span>
-                @if ($tiket->kategori_pekerjaan)
-                    <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-medium">
-                        Kategori: {{ $tiket->kategori_pekerjaan }}
-                    </span>
-                @endif
-                @if ($tiket->skala_eselonisasi)
-                    <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-medium">
-                        Skala: {{ $tiket->skala_eselonisasi }}
-                    </span>
-                @endif
-                @if ($tiket->estimasi_biaya)
-                    <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
-                        Estimasi: Rp {{ number_format($tiket->estimasi_biaya, 0, ',', '.') }}
-                    </span>
-                @endif
-            </div>
-        @endif
     </div>
 
     {{-- ========================================================================= --}}
