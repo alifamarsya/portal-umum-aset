@@ -26,52 +26,10 @@
         </div>
     @endif
 
-    <div class="grid grid-cols-1 lg:grid-cols-[230px_minmax(0,1fr)] gap-6 items-start">
+    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_270px] gap-6 items-start">
 
-        {{-- Settings Sidebar --}}
-        <nav class="bg-white rounded-2xl border border-slate-200 p-3 lg:sticky lg:top-6" aria-label="Navigasi pengaturan">
-            <p class="px-3 pt-1 pb-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Umum</p>
-            <a href="{{ route('profile.show') }}"
-               class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold bg-blue-50 text-[#114E84]">
-                @include('partials.icon', ['name' => 'users', 'class' => 'w-[18px] h-[18px]'])
-                Profil
-            </a>
-
-            <p class="px-3 pt-4 pb-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Keamanan</p>
-            <a href="{{ route('profile.change-password') }}"
-               class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
-                @include('partials.icon', ['name' => 'lock', 'class' => 'w-[18px] h-[18px]'])
-                Ubah Password
-            </a>
-        </nav>
-
-        {{-- Profile Panel --}}
-        <section class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-            <div class="px-6 sm:px-8 pt-6 sm:pt-8 pb-6 border-b border-slate-100">
-                <div class="flex items-center gap-4">
-                    {{-- Avatar (inisial, tanpa foto) --}}
-                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[#114E84] to-[#1D6FB8] flex items-center justify-center text-white font-extrabold text-xl select-none flex-shrink-0">
-                        {{ strtoupper(substr($user->nama_lengkap ?? $user->username, 0, 1)) }}{{ strtoupper(substr(strstr($user->nama_lengkap ?? '', ' ') ?: '', 1, 1)) }}
-                    </div>
-                    <div class="min-w-0">
-                        <h2 class="text-lg font-bold text-ink leading-tight truncate">
-                            {{ $user->nama_lengkap ?? $user->username }}
-                        </h2>
-                        <p class="text-xs text-slate-500 mt-0.5 truncate">{{ $user->email ?: $user->username }}</p>
-                        <div class="flex flex-wrap items-center gap-2 mt-2">
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-[#114E84] border border-blue-200">
-                                {{ $user->role?->label ?? $user->role?->nama ?? 'Pengguna' }}
-                            </span>
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                Akun Aktif
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Flat attribute rows --}}
+        {{-- Biodata Panel (kiri) --}}
+        <section class="order-2 lg:order-1 bg-white rounded-2xl border border-slate-200 overflow-hidden">
             <dl class="divide-y divide-slate-100">
                 <div class="grid grid-cols-1 sm:grid-cols-[220px_minmax(0,1fr)] gap-1 sm:gap-6 px-6 sm:px-8 py-4">
                     <dt>
@@ -136,6 +94,49 @@
                 </div>
             </dl>
         </section>
+
+        {{-- Profile + Nav Card (kanan) --}}
+        <aside class="order-1 lg:order-2 bg-white rounded-2xl border border-slate-200 p-6 lg:sticky lg:top-6">
+            {{-- Identitas --}}
+            <div class="text-center">
+                <div class="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-[#114E84] to-[#1D6FB8] flex items-center justify-center text-white font-extrabold text-2xl select-none">
+                    {{ strtoupper(substr($user->nama_lengkap ?? $user->username, 0, 1)) }}{{ strtoupper(substr(strstr($user->nama_lengkap ?? '', ' ') ?: '', 1, 1)) }}
+                </div>
+                <h2 class="text-base font-bold text-ink leading-tight mt-3 truncate">
+                    {{ $user->nama_lengkap ?? $user->username }}
+                </h2>
+                <p class="text-xs text-slate-500 mt-1 truncate">{{ $user->email ?: $user->username }}</p>
+                <div class="flex flex-wrap items-center justify-center gap-2 mt-3">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-[#114E84] border border-blue-200">
+                        {{ $user->role?->label ?? $user->role?->nama ?? 'Pengguna' }}
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        Akun Aktif
+                    </span>
+                </div>
+            </div>
+
+            <hr class="border-slate-100 my-5">
+
+            {{-- Navigasi pengaturan --}}
+            <nav aria-label="Navigasi pengaturan">
+                <p class="px-3 pb-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Umum</p>
+                <a href="{{ route('profile.show') }}"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold bg-blue-50 text-[#114E84]">
+                    @include('partials.icon', ['name' => 'users', 'class' => 'w-[18px] h-[18px]'])
+                    Profil
+                </a>
+
+                <p class="px-3 pt-4 pb-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Keamanan</p>
+                <a href="{{ route('profile.change-password') }}"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+                    @include('partials.icon', ['name' => 'lock', 'class' => 'w-[18px] h-[18px]'])
+                    Ubah Password
+                </a>
+            </nav>
+        </aside>
+
     </div>
 
 </div>
