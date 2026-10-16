@@ -121,14 +121,11 @@
 
             {{-- Navigasi pengaturan --}}
             <nav aria-label="Navigasi pengaturan">
-                <p class="px-3 pb-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Umum</p>
                 <a href="{{ route('profile.show') }}"
                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold bg-blue-50 text-[#114E84]">
                     @include('partials.icon', ['name' => 'users', 'class' => 'w-[18px] h-[18px]'])
                     Profil
                 </a>
-
-                <p class="px-3 pt-4 pb-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Keamanan</p>
                 <a href="{{ route('profile.change-password') }}"
                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
                     @include('partials.icon', ['name' => 'lock', 'class' => 'w-[18px] h-[18px]'])

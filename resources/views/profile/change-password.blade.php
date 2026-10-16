@@ -45,18 +45,6 @@
     <div class="w-full bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
 
         {{-- Header Banner --}}
-        <div class="bg-gradient-to-r from-[#114E84] via-[#0E4272] to-[#1D6FB8] px-6 sm:px-8 py-6 text-white relative overflow-hidden">
-            <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(#ffffff 1.5px, transparent 1.5px); background-size: 20px 20px;"></div>
-            <div class="relative flex items-center gap-3.5">
-                <div class="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center flex-shrink-0 shadow-inner">
-                    @include('partials.icon', ['name' => 'lock', 'class' => 'w-6 h-6 text-white'])
-                </div>
-                <div>
-                    <h2 class="text-base sm:text-lg font-bold leading-tight">Perbarui Kredensial Akun</h2>
-                    <p class="text-xs text-blue-100 mt-0.5">Pastikan kata sandi baru memenuhi standar keamanan informasi perbankan</p>
-                </div>
-            </div>
-        </div>
 
         {{-- Form & Guidelines Grid --}}
         <div class="p-6 sm:p-8">
