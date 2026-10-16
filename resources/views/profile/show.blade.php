@@ -6,7 +6,6 @@
 <div class="w-full max-w-full">
 
     {{-- Breadcrumb & Page Header --}}
-<<<<<<< Updated upstream
     <div class="mb-6">
         <nav class="flex items-center gap-2 text-xs text-slate-400 mb-1.5">
             <a href="{{ route('dashboard') }}" class="hover:text-[#114E84] transition">Dashboard</a>
@@ -17,18 +16,6 @@
         </nav>
         <h1 class="text-2xl font-bold text-ink">Pengaturan</h1>
         <p class="text-xs text-slate-500 mt-0.5">Kelola informasi akun dan preferensi Anda di Portal Umum &amp; Aset Bank Sulteng</p>
-=======
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-            <nav class="flex items-center gap-2 text-xs text-slate-400 mb-1.5">
-                <a href="{{ route('dashboard') }}" class="hover:text-[#114E84] transition">Dashboard</a>
-                <span class="text-slate-300">/</span>
-                <span class="text-slate-600 font-medium">Profil Pengguna</span>
-            </nav>
-            <h1 class="text-2xl font-bold text-ink">Profil Pengguna</h1>
-            <p class="text-xs text-slate-500 mt-0.5">Informasi akun, unit kerja, dan hak akses pengguna di Portal Umum &amp; Aset Bank Sulteng</p>
-        </div>
->>>>>>> Stashed changes
     </div>
 
     {{-- Status Alert --}}
