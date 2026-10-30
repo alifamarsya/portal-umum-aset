@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
 {
@@ -99,7 +100,7 @@ class UserController extends Controller
     public function resetPassword(Request $request, User $user)
     {
         $request->validate([
-            'new_password' => 'nullable|string|min:6',
+            'new_password' => ['nullable', 'string', Password::min(8)->mixedCase()->numbers()->symbols()],
             'must_change_pwd' => 'nullable|boolean',
         ]);
 
