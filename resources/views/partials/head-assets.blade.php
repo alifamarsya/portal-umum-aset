@@ -95,7 +95,10 @@
   input[type="checkbox"], input[type="radio"] { accent-color: #0E1726; }
 
   @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-  .animate-enter { animation: fadeInUp .3s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  /* NOTE: tanpa fill mode 'both' — 'both' menahan transform: translateY(0) selamanya,
+     sehingga elemen ini menjadi containing block bagi semua elemen fixed di dalamnya
+     (modal backdrop ikut terkunci hanya seluas area konten, bukan satu layar penuh). */
+  .animate-enter { animation: fadeInUp .3s cubic-bezier(0.16, 1, 0.3, 1); }
 
   details > summary { list-style: none; }
   details > summary::-webkit-details-marker { display: none; }
