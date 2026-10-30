@@ -98,21 +98,6 @@
             <p class="text-[12px] font-bold uppercase tracking-wider text-amber-600 mb-0.5">Pelacakan &amp; Detail Tiket</p>
             <div class="flex flex-wrap items-center gap-2.5">
                 <h1 class="text-2xl font-bold font-mono text-[#114E84]">{{ $tiket->nomor_tiket }}</h1>
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border {{ $tiket->statusBadgeClass() }}">
-                    @include('partials.icon', ['name' => $tiket->statusIcon(), 'class' => 'w-3.5 h-3.5 mr-1'])
-                    {{ $tiket->status }}
-                </span>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold border {{ $tiket->prioritasBadgeClass() }}">
-                    Prioritas: {{ $tiket->prioritas ?? 'Sedang' }}
-                </span>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border {{ $tiket->jenisBadgeClass() }}">
-                    {{ $tiket->jenis_pengajuan ?? 'Permintaan' }}
-                </span>
-                @if ($tiket->isSlaBreached())
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-rose-600 text-white animate-pulse">
-                        ⚠️ Lewat Batas SLA
-                    </span>
-                @endif
             </div>
         </div>
 
