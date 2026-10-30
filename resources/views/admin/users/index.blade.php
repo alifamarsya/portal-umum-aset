@@ -476,14 +476,27 @@
                     </button>
                 </div>
                 <div class="relative">
-                    <input type="text" id="resetPasswordInput" name="new_password" minlength="6"
-                           placeholder="Ketik password baru (misal: 12345678)"
+                    <input type="text" id="resetPasswordInput" name="new_password" minlength="8"
+                           placeholder="Ketik password baru yang kuat"
                            class="w-full text-xs rounded-xl px-3.5 py-2.5 pr-10 border border-slate-200 focus:border-[#114E84] focus:ring-1 focus:ring-[#114E84] outline-none font-mono">
                     <button type="button" onclick="copyPasswordValue('resetPasswordInput')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600" title="Salin Password">
                         @include('partials.icon', ['name' => 'file-text', 'class' => 'w-4 h-4'])
                     </button>
                 </div>
-                <p class="text-[11px] text-slate-400 mt-1">Kosongkan jika ingin sistem membuat password acak 10 karakter secara otomatis.</p>
+                {{-- Strength meter (ala Portum) --}}
+                <div class="mt-2 space-y-1">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-500 font-medium text-[11px]">Kekuatan Password:</span>
+                        <span id="reset_strength_label" class="font-bold text-[11px] text-slate-400">Belum diisi</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-1.5 h-1.5 w-full">
+                        <div id="reset_bar_1" class="h-full rounded-full bg-slate-200 transition-all duration-300"></div>
+                        <div id="reset_bar_2" class="h-full rounded-full bg-slate-200 transition-all duration-300"></div>
+                        <div id="reset_bar_3" class="h-full rounded-full bg-slate-200 transition-all duration-300"></div>
+                        <div id="reset_bar_4" class="h-full rounded-full bg-slate-200 transition-all duration-300"></div>
+                    </div>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Kosongkan jika ingin sistem membuat password acak 10 karakter secara otomatis. Password yang diketik harus kuat: minimal 8 karakter, kombinasi huruf besar-kecil, angka, dan simbol.</p>
             </div>
 
             <div>
@@ -497,7 +510,7 @@
                 <button type="button" onclick="closePasswordModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
                     Batal
                 </button>
-                <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-[#114E84] hover:bg-[#0E4272] text-white transition shadow-sm">
+                <button type="submit" id="btnResetPassword" class="px-4 py-2 rounded-xl text-xs font-bold bg-[#114E84] hover:bg-[#0E4272] text-white transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
                     Simpan Password Baru
                 </button>
             </div>
@@ -574,12 +587,20 @@
 
     // Helper Generator Password Acak
     function getRandomPassword(len = 10) {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
-        let res = '';
-        for (let i = 0; i < len; i++) {
-            res += chars.charAt(Math.floor(Math.random() * chars.length));
+        // Dijamin kuat: minimal satu huruf besar, satu huruf kecil, satu angka, satu simbol
+        const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        const lower = 'abcdefghijkmnpqrstuvwxyz';
+        const digits = '23456789';
+        const symbols = '!@#$';
+        const all = upper + lower + digits + symbols;
+        let res = upper.charAt(Math.floor(Math.random() * upper.length))
+            + lower.charAt(Math.floor(Math.random() * lower.length))
+            + digits.charAt(Math.floor(Math.random() * digits.length))
+            + symbols.charAt(Math.floor(Math.random() * symbols.length));
+        for (let i = 4; i < len; i++) {
+            res += all.charAt(Math.floor(Math.random() * all.length));
         }
-        return res;
+        return res.split('').sort(() => Math.random() - 0.5).join('');
     }
 
     function togglePasswordVisibility(inputId) {
@@ -601,8 +622,69 @@
         const el = document.getElementById('resetPasswordInput');
         if (el) {
             el.value = getRandomPassword(10);
+            evaluateResetPassword();
         }
     }
+
+    // Strength meter modal reset (ala Portum). Tombol simpan aktif jika input
+    // kosong (auto-generate) ATAU password yang diketik sudah kuat (skor 4/4).
+    function evaluateResetPassword() {
+        const el = document.getElementById('resetPasswordInput');
+        const btn = document.getElementById('btnResetPassword');
+        const label = document.getElementById('reset_strength_label');
+        const bars = [
+            document.getElementById('reset_bar_1'),
+            document.getElementById('reset_bar_2'),
+            document.getElementById('reset_bar_3'),
+            document.getElementById('reset_bar_4')
+        ];
+        if (!el || !btn) return;
+        const val = el.value;
+
+        bars.forEach(b => {
+            if (b) b.className = 'h-full rounded-full bg-slate-200 transition-all duration-300';
+        });
+
+        if (val.length === 0) {
+            label.textContent = 'Belum diisi';
+            label.className = 'font-bold text-[11px] text-slate-400';
+            btn.disabled = false;
+            return;
+        }
+
+        const hasLen = val.length >= 8;
+        const hasCase = /[a-z]/.test(val) && /[A-Z]/.test(val);
+        const hasNum = /[0-9]/.test(val);
+        const hasSym = /[^A-Za-z0-9]/.test(val);
+        const score = (hasLen ? 1 : 0) + (hasCase ? 1 : 0) + (hasNum ? 1 : 0) + (hasSym ? 1 : 0);
+
+        if (score === 1) {
+            label.textContent = 'Sangat Lemah';
+            label.className = 'font-bold text-[11px] text-rose-600';
+            if (bars[0]) bars[0].className = 'h-full rounded-full bg-rose-500 transition-all duration-300';
+        } else if (score === 2) {
+            label.textContent = 'Lemah';
+            label.className = 'font-bold text-[11px] text-amber-600';
+            if (bars[0]) bars[0].className = 'h-full rounded-full bg-amber-500 transition-all duration-300';
+            if (bars[1]) bars[1].className = 'h-full rounded-full bg-amber-500 transition-all duration-300';
+        } else if (score === 3) {
+            label.textContent = 'Sedang';
+            label.className = 'font-bold text-[11px] text-yellow-500';
+            if (bars[0]) bars[0].className = 'h-full rounded-full bg-yellow-400 transition-all duration-300';
+            if (bars[1]) bars[1].className = 'h-full rounded-full bg-yellow-400 transition-all duration-300';
+            if (bars[2]) bars[2].className = 'h-full rounded-full bg-yellow-400 transition-all duration-300';
+        } else if (score === 4) {
+            label.textContent = 'Kuat (Sesuai Standar)';
+            label.className = 'font-bold text-[11px] text-emerald-600';
+            bars.forEach(b => {
+                if (b) b.className = 'h-full rounded-full bg-emerald-500 transition-all duration-300';
+            });
+        }
+
+        btn.disabled = score !== 4;
+    }
+
+    document.getElementById('resetPasswordInput')?.addEventListener('input', evaluateResetPassword);
 
     function copyPasswordValue(inputId) {
         const el = document.getElementById(inputId);
@@ -654,6 +736,7 @@
         document.getElementById('pwdModalSubtitle').innerText = 'Akun: ' + user.nama_lengkap + ' (@' + user.username + ')';
         document.getElementById('passwordForm').action = '/admin/users/' + user.id + '/reset-password';
         document.getElementById('resetPasswordInput').value = '';
+        evaluateResetPassword();
 
         const modal = document.getElementById('passwordModal');
         modal.classList.remove('hidden');
