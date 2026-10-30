@@ -97,14 +97,37 @@
                                 </button>
                             </div>
 
-                            {{-- Real-time strength meter --}}
-                            <div id="strength-container" class="mt-2.5 hidden">
-                                <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                                    <div id="strength-fill" class="h-full rounded-full transition-all duration-300 w-0"></div>
+                            {{-- Strength Meter Bar & Label (ala Portum) --}}
+                            <div class="mt-2.5 space-y-1">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="text-slate-500 font-medium text-[11px]">Kekuatan Password:</span>
+                                    <span id="strength_label" class="font-bold text-[11px] text-slate-400">Belum diisi</span>
                                 </div>
-                                <div class="flex items-center justify-between mt-1 text-[11px]">
-                                    <span id="strength-label" class="font-semibold text-slate-500"></span>
-                                    <span class="text-slate-400">Minimal 8 karakter</span>
+                                <div class="grid grid-cols-4 gap-1.5 h-1.5 w-full">
+                                    <div id="bar_1" class="h-full rounded-full bg-slate-200 transition-all duration-300"></div>
+                                    <div id="bar_2" class="h-full rounded-full bg-slate-200 transition-all duration-300"></div>
+                                    <div id="bar_3" class="h-full rounded-full bg-slate-200 transition-all duration-300"></div>
+                                    <div id="bar_4" class="h-full rounded-full bg-slate-200 transition-all duration-300"></div>
+                                </div>
+                            </div>
+
+                            {{-- Syarat Password Checklist --}}
+                            <div class="mt-2.5 p-3 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1.5 text-xs">
+                                <div id="rule_len" class="flex items-center gap-2 text-slate-500 transition-colors">
+                                    <span class="w-3.5 h-3.5 rounded-full flex items-center justify-center bg-slate-200 text-white flex-shrink-0 text-[9px] font-bold">✕</span>
+                                    <span>Minimal 8 karakter</span>
+                                </div>
+                                <div id="rule_case" class="flex items-center gap-2 text-slate-500 transition-colors">
+                                    <span class="w-3.5 h-3.5 rounded-full flex items-center justify-center bg-slate-200 text-white flex-shrink-0 text-[9px] font-bold">✕</span>
+                                    <span>Kombinasi huruf besar (A-Z) &amp; huruf kecil (a-z)</span>
+                                </div>
+                                <div id="rule_num" class="flex items-center gap-2 text-slate-500 transition-colors">
+                                    <span class="w-3.5 h-3.5 rounded-full flex items-center justify-center bg-slate-200 text-white flex-shrink-0 text-[9px] font-bold">✕</span>
+                                    <span>Mengandung angka (0-9)</span>
+                                </div>
+                                <div id="rule_sym" class="flex items-center gap-2 text-slate-500 transition-colors">
+                                    <span class="w-3.5 h-3.5 rounded-full flex items-center justify-center bg-slate-200 text-white flex-shrink-0 text-[9px] font-bold">✕</span>
+                                    <span>Mengandung simbol khusus (contoh: @$!%*#?&amp;)</span>
                                 </div>
                             </div>
 
@@ -131,12 +154,13 @@
                                     </svg>
                                 </button>
                             </div>
+                            <div id="match_indicator" class="mt-1.5 text-xs font-medium hidden"></div>
                         </div>
 
                         {{-- Action buttons --}}
                         <div class="flex items-center gap-3 pt-4 border-t border-slate-100">
-                            <button type="submit" id="btn-submit"
-                                    class="bg-[#114E84] hover:bg-[#0E4272] text-white font-semibold px-6 py-2.5 rounded-xl shadow-2xs transition text-sm flex items-center justify-center gap-2">
+                            <button type="submit" id="btn-submit" disabled
+                                    class="bg-[#114E84] hover:bg-[#0E4272] text-white font-semibold px-6 py-2.5 rounded-xl shadow-2xs transition text-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
                                 @include('partials.icon', ['name' => 'check-circle', 'class' => 'w-4 h-4 text-white'])
                                 <span>Simpan Kata Sandi</span>
                             </button>
@@ -203,45 +227,112 @@ function togglePassword(fieldId, eyeId) {
         : `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>`;
 }
 
-// Password strength meter
+// Password strength meter (ala Portum): 4 syarat, tombol terkunci sampai Kuat + konfirmasi cocok
 const pwdInput = document.getElementById('password');
-const container = document.getElementById('strength-container');
-const fill = document.getElementById('strength-fill');
-const label = document.getElementById('strength-label');
+const pwdConfirm = document.getElementById('password_confirmation');
+const btnSubmit = document.getElementById('btn-submit');
+const matchInd = document.getElementById('match_indicator');
 
-const levels = [
-    { min: 0,  max: 25, color: 'bg-rose-500',    text: 'Sangat Lemah', textColor: 'text-rose-600' },
-    { min: 26, max: 50, color: 'bg-amber-400',   text: 'Cukup',        textColor: 'text-amber-600' },
-    { min: 51, max: 75, color: 'bg-blue-500',    text: 'Baik',         textColor: 'text-blue-600' },
-    { min: 76, max: 100,color: 'bg-emerald-500', text: 'Sangat Kuat',  textColor: 'text-emerald-600' },
-];
-
-if (pwdInput && container && fill && label) {
-    pwdInput.addEventListener('input', function () {
-        const val = this.value;
-        if (!val) {
-            container.classList.add('hidden');
-            return;
-        }
-        container.classList.remove('hidden');
-
-        let score = 0;
-        if (val.length >= 8) score += 25;
-        if (/[A-Z]/.test(val)) score += 25;
-        if (/[0-9]/.test(val)) score += 25;
-        if (/[^A-Za-z0-9]/.test(val)) score += 25;
-
-        const lvl = levels.find(l => score <= l.max) || levels[3];
-        fill.className = `h-full rounded-full transition-all duration-300 ${lvl.color}`;
-        fill.style.width = Math.max(10, score) + '%';
-        label.className = `font-semibold ${lvl.textColor}`;
-        label.textContent = 'Kekuatan: ' + lvl.text;
-    });
+function updateRequirement(elId, isValid) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    const badge = el.querySelector('span');
+    if (isValid) {
+        el.classList.remove('text-slate-500');
+        el.classList.add('text-emerald-700', 'font-semibold');
+        badge.classList.remove('bg-slate-200');
+        badge.classList.add('bg-emerald-500');
+        badge.textContent = '✓';
+    } else {
+        el.classList.remove('text-emerald-700', 'font-semibold');
+        el.classList.add('text-slate-500');
+        badge.classList.remove('bg-emerald-500');
+        badge.classList.add('bg-slate-200');
+        badge.textContent = '✕';
+    }
 }
+
+function evaluatePassword() {
+    if (!pwdInput) return;
+    const val = pwdInput.value;
+    const confirmVal = pwdConfirm ? pwdConfirm.value : '';
+
+    const hasLen = val.length >= 8;
+    const hasCase = /[a-z]/.test(val) && /[A-Z]/.test(val);
+    const hasNum = /[0-9]/.test(val);
+    const hasSym = /[^A-Za-z0-9]/.test(val);
+
+    updateRequirement('rule_len', hasLen);
+    updateRequirement('rule_case', hasCase);
+    updateRequirement('rule_num', hasNum);
+    updateRequirement('rule_sym', hasSym);
+
+    const score = (hasLen ? 1 : 0) + (hasCase ? 1 : 0) + (hasNum ? 1 : 0) + (hasSym ? 1 : 0);
+
+    const bars = [
+        document.getElementById('bar_1'),
+        document.getElementById('bar_2'),
+        document.getElementById('bar_3'),
+        document.getElementById('bar_4')
+    ];
+    const label = document.getElementById('strength_label');
+
+    bars.forEach(b => {
+        if (b) b.className = 'h-full rounded-full bg-slate-200 transition-all duration-300';
+    });
+
+    if (val.length === 0) {
+        label.textContent = 'Belum diisi';
+        label.className = 'font-bold text-[11px] text-slate-400';
+    } else if (score === 1) {
+        label.textContent = 'Sangat Lemah';
+        label.className = 'font-bold text-[11px] text-rose-600';
+        if (bars[0]) bars[0].className = 'h-full rounded-full bg-rose-500 transition-all duration-300';
+    } else if (score === 2) {
+        label.textContent = 'Lemah';
+        label.className = 'font-bold text-[11px] text-amber-600';
+        if (bars[0]) bars[0].className = 'h-full rounded-full bg-amber-500 transition-all duration-300';
+        if (bars[1]) bars[1].className = 'h-full rounded-full bg-amber-500 transition-all duration-300';
+    } else if (score === 3) {
+        label.textContent = 'Sedang';
+        label.className = 'font-bold text-[11px] text-yellow-500';
+        if (bars[0]) bars[0].className = 'h-full rounded-full bg-yellow-400 transition-all duration-300';
+        if (bars[1]) bars[1].className = 'h-full rounded-full bg-yellow-400 transition-all duration-300';
+        if (bars[2]) bars[2].className = 'h-full rounded-full bg-yellow-400 transition-all duration-300';
+    } else if (score === 4) {
+        label.textContent = 'Kuat (Sesuai Standar)';
+        label.className = 'font-bold text-[11px] text-emerald-600';
+        bars.forEach(b => {
+            if (b) b.className = 'h-full rounded-full bg-emerald-500 transition-all duration-300';
+        });
+    }
+
+    // Match checking
+    let match = false;
+    if (confirmVal.length > 0) {
+        matchInd.classList.remove('hidden');
+        if (val === confirmVal) {
+            matchInd.textContent = '✓ Konfirmasi password cocok';
+            matchInd.className = 'mt-1.5 text-xs font-semibold text-emerald-600';
+            match = true;
+        } else {
+            matchInd.textContent = '✕ Konfirmasi password tidak cocok';
+            matchInd.className = 'mt-1.5 text-xs font-semibold text-rose-600';
+            match = false;
+        }
+    } else {
+        matchInd.classList.add('hidden');
+        match = false;
+    }
+
+    if (btnSubmit) btnSubmit.disabled = !(score === 4 && match);
+}
+
+if (pwdInput) pwdInput.addEventListener('input', evaluatePassword);
+if (pwdConfirm) pwdConfirm.addEventListener('input', evaluatePassword);
 
 // Loading state on submit
 const form = document.getElementById('form-ubah-password');
-const btnSubmit = document.getElementById('btn-submit');
 if (form && btnSubmit) {
     form.addEventListener('submit', function () {
         btnSubmit.disabled = true;
