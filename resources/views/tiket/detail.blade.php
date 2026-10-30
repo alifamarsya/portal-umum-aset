@@ -621,12 +621,6 @@
                                             </p>
                                         </div>
                                     </div>
-
-                                    @if ($isImg)
-                                        <div class="mb-3 rounded-lg overflow-hidden border border-slate-200 bg-white max-h-56 flex items-center justify-center">
-                                            <img src="{{ route('tiket.attachment.file.view', [$tiket, $att]) }}" alt="Pratinjau {{ $att->file_name }}" class="w-full h-auto object-contain max-h-56">
-                                        </div>
-                                    @endif
                                 </div>
 
                                 <div class="flex items-center gap-2 pt-2 border-t border-slate-200/60 mt-auto">
@@ -661,12 +655,6 @@
                                     <p class="text-[11px] text-slate-400 uppercase font-mono">{{ $ext ?: 'File' }} &bull; Lampiran Permohonan</p>
                                 </div>
                             </div>
-
-                            @if ($isImg)
-                                <div class="mb-3 rounded-lg overflow-hidden border border-slate-200 bg-white max-h-72 flex items-center justify-center">
-                                    <img src="{{ route('tiket.attachment.view', $tiket) }}" alt="Pratinjau Lampiran" class="w-full h-auto object-contain max-h-72">
-                                </div>
-                            @endif
 
                             <div class="flex flex-wrap gap-2.5">
                                 <a href="{{ route('tiket.attachment.view', $tiket) }}" target="_blank"
