@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Concerns\LogsAudit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 class ProfileController extends Controller
 {
@@ -33,7 +34,7 @@ class ProfileController extends Controller
     {
         $request->validate([
             'password_lama'         => 'required|string',
-            'password'              => 'required|string|min:8|confirmed',
+            'password'              => ['required', 'string', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
         ], [
             'password_lama.required'     => 'Password lama wajib diisi.',
             'password.required'          => 'Password baru wajib diisi.',
