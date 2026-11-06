@@ -9,8 +9,9 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Jadwal pemantauan batas SLA tiket aktif setiap 15 menit
-Schedule::command('tickets:check-sla')->everyFifteenMinutes();
+// Jadwal pemantauan batas SLA tiket aktif setiap 15 menit (hanya job).
+// Perintah `tickets:check-sla` tetap tersedia untuk pengecekan manual, tetapi
+// jadwalnya dihapus agar pemeriksaan SLA tidak berjalan dua kali setiap 15 menit.
 Schedule::job(new \App\Jobs\CheckTicketSlaJob)->everyFifteenMinutes();
 
 // Jadwal ETL Data Warehouse otomatis setiap awal bulan jam 02:00
