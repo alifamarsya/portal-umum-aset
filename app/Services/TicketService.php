@@ -6,7 +6,14 @@ use App\Models\InternalDepartment;
 use App\Models\Ticket;
 use App\Models\TicketHistory;
 use App\Models\User;
+use App\Notifications\TicketAllocatedNotification;
+use App\Notifications\TicketApprovedNotification;
+use App\Notifications\TicketClosedNotification;
+use App\Notifications\TicketCompletedNotification;
+use App\Notifications\TicketCreatedNotification;
+use App\Notifications\TicketRejectedNotification;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -117,6 +124,12 @@ class TicketService
             );
 
             Log::info("Tiket baru dibuat: {$ticket->nomor_tiket} ({$jenisPengajuan}/{$prioritas}) oleh {$pemohon->username}");
+
+            // Beri tahu semua operator: ada tiket baru yang menunggu verifikasi.
+            $this->kirimNotifikasi(
+                $this->operatorAktif(),
+                new TicketCreatedNotification($ticket)
+            );
 
             return $ticket;
         });
@@ -242,6 +255,13 @@ class TicketService
 
             Log::info("Tiket {$ticket->nomor_tiket} dialokasikan ke dept #{$departmentId} oleh {$operator->username} (Response SLA: {$responseStatus})");
 
+            // Beri tahu kabag bagian tujuan + pemohon bahwa tiket sudah dialokasikan.
+            $notifAlokasi = new TicketAllocatedNotification($ticket, $dept?->nama ?? 'Unit Terkait');
+            $this->kirimNotifikasi($this->kabagUntukDepartment($departmentId), $notifAlokasi);
+            if ($ticket->pemohon) {
+                $ticket->pemohon->notify($notifAlokasi);
+            }
+
             return $ticket->fresh();
         });
     }
@@ -294,6 +314,13 @@ class TicketService
 
             Log::info("Tiket {$ticket->nomor_tiket} disetujui oleh {$kabag->username}, assigned ke {$staf->username}. Target: {$resolutionHours} jam kerja s/d {$resolutionDueAt}");
 
+            // Beri tahu staf yang ditugaskan + pemohon bahwa tiket disetujui.
+            $notifSetuju = new TicketApprovedNotification($ticket);
+            $this->kirimNotifikasi($staf, $notifSetuju);
+            if ($ticket->pemohon) {
+                $ticket->pemohon->notify($notifSetuju);
+            }
+
             return $ticket->fresh();
         });
     }
@@ -321,6 +348,11 @@ class TicketService
             );
 
             Log::info("Tiket {$ticket->nomor_tiket} ditolak oleh {$kabag->username}: {$alasan}");
+
+            // Beri tahu pemohon bahwa tiketnya ditolak, beserta alasannya.
+            if ($ticket->pemohon) {
+                $ticket->pemohon->notify(new TicketRejectedNotification($ticket, $alasan));
+            }
 
             return $ticket->fresh();
         });
@@ -367,6 +399,12 @@ class TicketService
 
             Log::info("Tiket {$ticket->nomor_tiket} selesai dikerjakan oleh {$staf->username} (Resolution SLA: {$resolutionStatus})");
 
+            // Beri tahu pemohon bahwa pekerjaannya selesai, agar memeriksa
+            // hasil lalu mengonfirmasi dan menutup tiket.
+            if ($ticket->pemohon) {
+                $ticket->pemohon->notify(new TicketCompletedNotification($ticket));
+            }
+
             return $ticket->fresh();
         });
     }
@@ -391,11 +429,79 @@ class TicketService
 
             Log::info("Tiket {$ticket->nomor_tiket} ditutup oleh {$pemohon->username}");
 
+            // Beri tahu staf pelaksana + kabag bahwa tiket sudah ditutup pemohon.
+            $notifTutup = new TicketClosedNotification($ticket);
+            if ($ticket->assigned_to) {
+                $stafPenutup = User::find($ticket->assigned_to);
+                if ($stafPenutup) {
+                    $stafPenutup->notify($notifTutup);
+                }
+            }
+            if ($ticket->kabag_id) {
+                $kabagPenutup = User::find($ticket->kabag_id);
+                if ($kabagPenutup) {
+                    $kabagPenutup->notify($notifTutup);
+                }
+            }
+
             return $ticket->fresh();
         });
     }
 
     // ── Internal Helper ──────────────────────────────────────────────────────
+
+    /**
+     * Kirim satu notifikasi ke satu user atau sekumpulan user.
+     * Notifikasi dikirim di dalam DB transaction yang sama dengan perubahan
+     * tiket (seperti pola portum): kalau transaksi dibatalkan, notifikasi ikut
+     * batal tersimpan.
+     */
+    private function kirimNotifikasi(iterable|User|null $penerima, Notification $notifikasi): void
+    {
+        if ($penerima instanceof User) {
+            $penerima = [$penerima];
+        }
+
+        if (empty($penerima)) {
+            return;
+        }
+
+        foreach ($penerima as $user) {
+            $user->notify($notifikasi);
+        }
+    }
+
+    /**
+     * Daftar operator aktif (penerima notifikasi tiket baru).
+     */
+    private function operatorAktif()
+    {
+        return User::whereHas('role', fn ($q) => $q->where('nama', 'operator'))
+            ->where('is_active', true)
+            ->get();
+    }
+
+    /**
+     * Kabag dari sebuah department (1 = Umum & RT, 2 = Aset, 3 = Pengadaan).
+     * Pemetaan role mengikuti User::effectiveDepartmentId().
+     */
+    private function kabagUntukDepartment(int $departmentId)
+    {
+        $roleNama = match ($departmentId) {
+            1 => 'kabag_umum',
+            2 => 'kabag_aset',
+            3 => 'kabag_pengadaan',
+            default => null,
+        };
+
+        if (!$roleNama) {
+            return collect();
+        }
+
+        return User::whereHas('role', fn ($q) => $q->where('nama', $roleNama))
+            ->where('is_active', true)
+            ->get();
+    }
 
     public function recordHistory(
         Ticket $ticket,
