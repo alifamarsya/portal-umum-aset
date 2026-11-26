@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\RisalahRapatController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TicketController;
 use Illuminate\Support\Facades\Route;
@@ -56,6 +57,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/{tiket}/lampiran/{attachment}/view',    [TicketController::class, 'viewAttachmentFile'])->name('attachment.file.view');
         Route::get('/{tiket}/lampiran/{attachment}/download',[TicketController::class, 'downloadAttachmentFile'])->name('attachment.file.download');
     });
+
+    // ── Notifikasi ─────────────────────────────────────────────────────────
+    // Lonceng notifikasi di layout + halaman daftar notifikasi.
+    // Route baca (GET) dipakai saat user mengklik notifikasi di lonceng/daftar
+    // agar langsung diarahkan ke halaman tujuan (misalnya detail tiket).
+    Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifikasi/{id}/baca', [NotificationController::class, 'read'])->name('notifications.read');
+    Route::post('/notifikasi/{id}/baca', [NotificationController::class, 'read'])->name('notifications.mark-read');
+    Route::post('/notifikasi/tandai-semua-dibaca', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
 
     // ── Modul CRUD Generik (20 modul, lihat config/modules.php) ─────────────
     Route::prefix('modul/{key}')->name('modul.')->group(function () {
