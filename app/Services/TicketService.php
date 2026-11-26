@@ -169,10 +169,14 @@ class TicketService
 
                 // Jika tiket sudah dalam proses, hitung ulang target resolution jika prioritas berubah
                 if ($ticket->status === Ticket::STATUS_DALAM_PROSES && $ticket->resolution_started_at) {
-                    $resolutionHours = $this->slaService->calculateResolutionHours(
-                        $ticket->kategori,
-                        $ticket->prioritas ?? Ticket::PRIORITAS_SEDANG
-                    );
+                    // Pakai sla_jam yang sudah diperbarui ke SLA_HOURS prioritas baru di atas,
+                    // supaya angka tetap konsisten. Hitung ulang hanya sebagai fallback.
+                    $resolutionHours = (int) ($ticket->sla_jam ?? 0) > 0
+                        ? (int) $ticket->sla_jam
+                        : $this->slaService->calculateResolutionHours(
+                            $ticket->kategori,
+                            $ticket->prioritas ?? Ticket::PRIORITAS_SEDANG
+                        );
                     $resolutionDueAt = $this->slaService->calculateResolutionDueAt($ticket->resolution_started_at, $resolutionHours);
                     $ticket->update([
                         'resolution_hours'  => $resolutionHours,
@@ -277,11 +281,15 @@ class TicketService
             $staf = User::findOrFail($stafId);
             $now  = now();
 
-            // Hitung durasi resolution berdasarkan kategori dan prioritas
-            $resolutionHours = $this->slaService->calculateResolutionHours(
-                $ticket->kategori,
-                $ticket->prioritas ?? Ticket::PRIORITAS_SEDANG
-            );
+            // Pakai sla_jam yang sudah tersimpan di tiket (dari SLA_HOURS saat tiket
+            // dibuat), supaya angka yang dilihat staf sama dengan yang dilihat pemohon
+            // di form. Hitung ulang hanya sebagai fallback kalau sla_jam kosong.
+            $resolutionHours = (int) ($ticket->sla_jam ?? 0) > 0
+                ? (int) $ticket->sla_jam
+                : $this->slaService->calculateResolutionHours(
+                    $ticket->kategori,
+                    $ticket->prioritas ?? Ticket::PRIORITAS_SEDANG
+                );
 
             // Batas waktu penyelesaian dihitung dalam jam kerja (08.00 - 17.00 WIB)
             $resolutionDueAt = $this->slaService->calculateResolutionDueAt($now, $resolutionHours);
